@@ -1,0 +1,7 @@
+# T113-S3 (armv7, musl, hard float) — OpenWrt/Tina toolchain
+[target.armv7-unknown-linux-musleabihf]
+linker = "/home/sclock/bin/arm-musl-6.4/bin/arm-openwrt-linux-muslgnueabi-gcc"
+
+[env]
+PKG_CONFIG_PATH = "/home/sclock/bin/arm-musl-6.4/arm-openwrt-linux-muslgnueabi/lib/pkgconfig"
+PKG_CONFIG_SYSROOT_DIR = "/home/sclock/bin/arm-musl-6.4/arm-openwrt-linux-muslgnueabi"
