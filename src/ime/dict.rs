@@ -31,48 +31,6 @@ impl Dictionary {
             .unwrap_or_default()
     }
 
-    /// 查询词组
-    pub fn lookup_phrase(&self, pinyin: &str) -> Vec<DictEntry> {
-        self.phrases
-            .get(&pinyin.to_lowercase())
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    /// 综合查询：给定拼音音节列表，查找所有匹配的单字和词组
-    pub fn lookup(&self, syllables: &[String]) -> Vec<DictEntry> {
-        let mut results = Vec::new();
-
-        if syllables.is_empty() {
-            return results;
-        }
-
-        // 查找词组（完整匹配所有音节）
-        let pinyin_key = syllables.join("'");
-        if let Some(entries) = self.phrases.get(&pinyin_key) {
-            results.extend(entries.iter().cloned());
-        }
-
-        // 查找以给定音节开头的词组（前缀匹配）
-        for (key, entries) in &self.phrases {
-            if key.starts_with(&pinyin_key) && key != &pinyin_key {
-                // 匹配部分前缀的词组
-                results.extend(entries.iter().cloned());
-            }
-        }
-
-        // 查找单字（使用最后一个音节）
-        if let Some(last_syl) = syllables.last() {
-            if let Some(entries) = self.chars.get(last_syl.as_str()) {
-                results.extend(entries.iter().cloned());
-            }
-        }
-
-        // 按频率排序
-        results.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
-        results
-    }
-
     /// 查找完全匹配给定音节序列的候选词
     pub fn lookup_exact(&self, syllables: &[String]) -> Vec<DictEntry> {
         let mut results = Vec::new();
@@ -133,26 +91,6 @@ impl Dictionary {
         results
     }
 
-    /// 添加用户自定义词组到字典
-    pub fn add_user_phrase(&mut self, pinyin: &str, text: &str, freq: f64) {
-        let key = pinyin.to_lowercase();
-        let entry = DictEntry {
-            text: text.to_string(),
-            freq,
-        };
-
-        self.phrases
-            .entry(key)
-            .and_modify(|entries| {
-                if let Some(existing) = entries.iter_mut().find(|e| e.text == text) {
-                    existing.freq = existing.freq.max(freq);
-                } else {
-                    entries.push(entry.clone());
-                    entries.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
-                }
-            })
-            .or_insert_with(|| vec![entry]);
-    }
 }
 
 fn parse_dict_data(data: &str) -> HashMap<String, Vec<DictEntry>> {

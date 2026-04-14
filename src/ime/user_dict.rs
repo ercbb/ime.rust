@@ -49,43 +49,9 @@ impl UserDict {
         }
     }
 
-    /// 添加用户自定义词组
-    pub fn add_phrase(&mut self, pinyin: &str, text: &str) {
-        let key = pinyin.to_lowercase();
-        let entry = UserEntry {
-            text: text.to_string(),
-            pinyin: key.clone(),
-            freq: 100,
-        };
-
-        self.entries
-            .entry(key)
-            .and_modify(|entries| {
-                if let Some(existing) = entries.iter_mut().find(|e| e.text == text) {
-                    existing.freq += 1;
-                } else {
-                    entries.push(entry.clone());
-                }
-            })
-            .or_insert_with(|| vec![entry]);
-    }
-
     /// 记录使用频率
     pub fn record_usage(&mut self, text: &str) {
         *self.freq_map.entry(text.to_string()).or_insert(0) += 1;
-    }
-
-    /// 获取用户使用频率
-    pub fn get_freq(&self, text: &str) -> u32 {
-        self.freq_map.get(text).copied().unwrap_or(0)
-    }
-
-    /// 查询用户词典
-    pub fn lookup(&self, pinyin: &str) -> Vec<UserEntry> {
-        self.entries
-            .get(&pinyin.to_lowercase())
-            .cloned()
-            .unwrap_or_default()
     }
 
     /// 获取频率加权值（用于候选排序）
@@ -98,17 +64,6 @@ impl UserDict {
         }
     }
 
-    /// 删除自定义词组
-    pub fn remove_phrase(&mut self, pinyin: &str, text: &str) {
-        if let Some(entries) = self.entries.get_mut(&pinyin.to_lowercase()) {
-            entries.retain(|e| e.text != text);
-        }
-    }
-
-    /// 获取所有自定义词组
-    pub fn get_all_entries(&self) -> Vec<&UserEntry> {
-        self.entries.values().flat_map(|v| v.iter()).collect()
-    }
 }
 
 impl Default for UserDict {

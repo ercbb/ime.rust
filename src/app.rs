@@ -10,8 +10,6 @@ slint::include_modules!();
 
 /// 键盘面板布局配置
 struct KbLayout {
-    width: f32,
-    height: f32,
     gap: f32,
     key_w: f32,
     key_h: f32,
@@ -23,15 +21,13 @@ struct KbLayout {
 impl KbLayout {
     fn new(width: f32, height: f32) -> Self {
         let gap = 4.0;
-        let candidate_h = 36.0;
+        let candidate_h = 48.0;
         let kb_area = height - candidate_h;
-        // 5 rows, 4 gaps
-        let key_h = ((kb_area - 5.0 * gap) / 5.0).floor();
+        // KeyboardRows VerticalLayout: padding 4px top + 10px bottom, 3 gaps between 4 rows
+        let key_h = ((kb_area - 14.0 - 3.0 * gap) / 4.0).floor();
         // Number row: 10 keys, 9 gaps
         let key_w = ((width - 10.0 * gap - 2.0 * gap) / 10.0).floor();
         Self {
-            width,
-            height,
             gap,
             key_w,
             key_h,
@@ -248,22 +244,21 @@ fn update_keyboard(window: &MainWindow, engine: &ImeEngine, layout: &KbLayout) {
     let is_symbol = engine.mode == InputMode::Symbols;
     let w = layout.key_w;
 
-    let row1 = make_key_row(&["1","2","3","4","5","6","7","8","9","0"], is_symbol, w);
-    let row2 = make_key_row(&["q","w","e","r","t","y","u","i","o","p"], is_symbol, w);
-    let row3 = make_key_row(&["a","s","d","f","g","h","j","k","l"], is_symbol, w);
+    let row1=  make_key_row(&["q","w","e","r","t","y","u","i","o","p"], is_symbol, w);
+    let row2=  make_key_row(&["a","s","d","f","g","h","j","k","l"], is_symbol, w);
 
-    // Row 4: [caps] z x c v b n m [enter]
+    // Row 3: [caps] z x c v b n m [enter]
     let caps_label = if engine.caps_lock { "CAP" } else { "cap" };
-    let mut row4: Vec<KeyValue> = vec![
+    let mut row3: Vec<KeyValue> = vec![
         KeyValue { label: caps_label.into(), id: "caps_lock".into(), key_width: layout.ctrl_w },
     ];
-    row4.extend(make_key_row(&["z","x","c","v","b","n","m"], is_symbol, w));
-    row4.push(KeyValue { label: "\u{23ce}".into(), id: "enter".into(), key_width: layout.ctrl_w });
+    row3.extend(make_key_row(&["z","x","c","v","b","n","m"], is_symbol, w));
+    row3.push(KeyValue { label: "\u{23ce}".into(), id: "enter".into(), key_width: layout.ctrl_w });
 
     window.set_row1_keys(slint::ModelRc::from(row1.as_slice()));
     window.set_row2_keys(slint::ModelRc::from(row2.as_slice()));
     window.set_row3_keys(slint::ModelRc::from(row3.as_slice()));
-    window.set_row4_keys(slint::ModelRc::from(row4.as_slice()));
+    window.set_row4_keys(slint::ModelRc::from([] as [KeyValue; 0]));
 
     let mode_label = match engine.mode {
         InputMode::ChineseFull => "全拼",

@@ -19,8 +19,6 @@ pub enum InputMode {
 #[derive(Clone, Debug)]
 pub struct Candidate {
     pub text: String,
-    pub pinyin: String,
-    pub freq: f64,
 }
 
 /// IME 引擎
@@ -282,18 +280,10 @@ impl ImeEngine {
 
     /// 获取按键对应的符号（用于符号模式显示和输入）
     pub fn symbol_for_key(key: &str) -> Option<&'static str> {
-        let symbol_map: [(&str, &str); 36] = [
-            ("1", "！"), ("2", "，"), ("3", "。"), ("4", "、"),
-            ("5", "；"), ("6", "："), ("7", "？"), ("8", "\""),
-            ("9", "\""), ("0", "……"),
-            ("q", "～"), ("w", "（"), ("e", "）"), ("r", "《"),
-            ("t", "》"), ("y", "【"), ("u", "】"), ("i", "—"),
-            ("o", "{"), ("p", "}"),
-            ("a", "…"), ("s", "￥"), ("d", "$"), ("f", "%"),
-            ("g", "&"), ("h", "*"), ("j", "+"), ("k", "-"),
-            ("l", "="),
-            ("z", "〈"), ("x", "〉"), ("c", "〔"), ("v", "〕"),
-            ("b", "〖"), ("n", "〗"), ("m", "·"),
+        let symbol_map: [(&str, &str); 26] = [
+            ("q", "1"), ("w", "2"), ("e", "3"), ("r", "4"), ("t", "5"), ("y", "6"), ("u", "7"), ("i", "8"), ("o", "9"), ("p", "0"),
+            ("a", "!"), ("s", "@"), ("d", "#"), ("f", "$"), ("g", "%"), ("h", "/"), ("j", "&"), ("k", "*"), ("l", "+"),
+            ("z", "<"), ("x", ">"), ("c", "("), ("v", ")"), ("b", ","), ("n", "."), ("m", "-"),
         ];
         symbol_map.iter().find(|(k, _)| *k == key).map(|(_, sym)| *sym)
     }
@@ -357,14 +347,11 @@ impl ImeEngine {
             entries.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
 
             // 转换为候选词
-            let pinyin_display = self.get_pinyin_display();
             self.candidates = entries
                 .into_iter()
                 .take(50) // 最多保留50个候选
                 .map(|e| Candidate {
                     text: e.text,
-                    pinyin: pinyin_display.clone(),
-                    freq: e.freq,
                 })
                 .collect();
 
@@ -377,8 +364,6 @@ impl ImeEngine {
                         .take(50)
                         .map(|e| Candidate {
                             text: e.text,
-                            pinyin: pinyin_display.clone(),
-                            freq: e.freq,
                         })
                         .collect();
                 }
@@ -462,19 +447,6 @@ impl ImeEngine {
         &self.association_candidates
     }
 
-    /// 获取拼音显示文本
-    fn get_pinyin_display(&self) -> String {
-        if self.parsed_syllables.is_empty() {
-            return self.input_buffer.clone();
-        }
-        let mut display = self.parsed_syllables.join("'");
-        if !self.remaining_buffer.is_empty() {
-            display.push('\'');
-            display.push_str(&self.remaining_buffer);
-        }
-        display
-    }
-
     /// 切换输入模式
     pub fn toggle_mode(&mut self, new_mode: InputMode) {
         // 切换前清空状态
@@ -498,53 +470,9 @@ impl ImeEngine {
         self.toggle_mode(next);
     }
 
-    /// 添加用户自定义词组
-    pub fn add_user_phrase(&mut self, pinyin: &str, text: &str) {
-        self.user_dict.add_phrase(pinyin, text);
-
-        // 同时添加到主字典
-        if let Some(ref mut dict) = self.dict {
-            dict.add_user_phrase(pinyin, text, 200.0);
-        }
-
-        self.save_user_dict();
-    }
-
     /// 保存用户词典
     fn save_user_dict(&self) {
         self.user_dict.save(&self.user_dict_path);
-    }
-
-    /// 获取模式名称
-    pub fn mode_name(&self) -> &str {
-        match self.mode {
-            InputMode::ChineseFull => "全拼",
-            InputMode::ChineseDouble => "双拼",
-            InputMode::English => "英文",
-            InputMode::Symbols => "符号",
-        }
-    }
-
-    /// 获取用户词典引用
-    pub fn user_dict(&self) -> &UserDict {
-        &self.user_dict
-    }
-
-    /// 获取用户词典可变引用
-    pub fn user_dict_mut(&mut self) -> &mut UserDict {
-        &mut self.user_dict
-    }
-
-    /// 清空输出文本
-    pub fn clear_output(&mut self) {
-        self.output_text.clear();
-    }
-
-    /// 撤销最后一个输入
-    pub fn undo(&mut self) {
-        if !self.output_text.is_empty() {
-            self.output_text.pop();
-        }
     }
 }
 

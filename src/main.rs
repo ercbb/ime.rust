@@ -7,6 +7,6 @@ fn main() {
     let candidate_count = std::env::args()
         .nth(1)
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(6);
+        .unwrap_or(5);
     app::run(candidate_count);
 }

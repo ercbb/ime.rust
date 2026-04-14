@@ -180,17 +180,6 @@ impl AssociationEngine {
         vec![]
     }
 
-    /// 添加自定义联想
-    pub fn add_association(&mut self, char: &str, suggestion: &str) {
-        self.assoc_map
-            .entry(char.to_string())
-            .and_modify(|list| {
-                if !list.contains(&suggestion.to_string()) {
-                    list.insert(0, suggestion.to_string());
-                }
-            })
-            .or_insert_with(|| vec![suggestion.to_string()]);
-    }
 }
 
 /// 判断是否是中文字符
