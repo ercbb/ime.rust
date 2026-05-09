@@ -3,6 +3,7 @@ pub mod dict;
 pub mod dict_core;
 pub mod double_pinyin;
 pub mod engine;
+pub mod layout;
 pub mod pinyin;
 pub mod syllable_table;
 pub mod user_dict;
