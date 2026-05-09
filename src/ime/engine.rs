@@ -258,7 +258,7 @@ impl ImeEngine {
         }
     }
 
-    /// 处理符号输入
+    /// 处理数字/符号输入
     fn process_symbol(&mut self, key: &str) -> Option<String> {
         match key {
             "backspace" => {
@@ -269,10 +269,12 @@ impl ImeEngine {
                 self.output_text.push(' ');
                 None
             }
+            "enter" => {
+                self.output_text.push('\n');
+                None
+            }
             _ => {
-                if let Some(sym) = Self::symbol_for_key(key) {
-                    self.output_text.push_str(sym);
-                }
+                self.output_text.push_str(key);
                 None
             }
         }
@@ -466,6 +468,26 @@ impl ImeEngine {
             InputMode::ChineseDouble => InputMode::English,
             InputMode::English => InputMode::Symbols,
             InputMode::Symbols => InputMode::ChineseFull,
+        };
+        self.toggle_mode(next);
+    }
+
+    /// 英文/数字模式切换
+    pub fn cycle_lang_mode(&mut self) {
+        let next = match self.mode {
+            InputMode::English => InputMode::Symbols,
+            InputMode::Symbols => InputMode::English,
+            _ => InputMode::English,
+        };
+        self.toggle_mode(next);
+    }
+
+    /// 全拼/双拼模式切换
+    pub fn cycle_cn_mode(&mut self) {
+        let next = match self.mode {
+            InputMode::ChineseFull => InputMode::ChineseDouble,
+            InputMode::ChineseDouble => InputMode::ChineseFull,
+            _ => InputMode::ChineseFull,
         };
         self.toggle_mode(next);
     }

@@ -45,7 +45,7 @@ export component KeyButton inherits Rectangle {
 // === Candidate Bar ===
 
 export component CandidateBar inherits Rectangle {
-    height: 48px;
+    height: 36px;
 
     in property <string> mode-indicator: "中";
     in property <color> mode-color: #0078d7;
@@ -66,24 +66,23 @@ export component CandidateBar inherits Rectangle {
         visible: root.show-associations;
         padding-left: 8px;
         padding-right: 8px;
-        padding-top: 6px;
-        padding-bottom: 6px;
-        spacing: 12px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        spacing: 6px;
         alignment: start;
 
         Rectangle {
-            width: 32px; height: 28px; border-radius: 3px;
+            width: 28px; height: 22px; border-radius: 3px;
             background: root.mode-color;
-            Text { text: root.mode-indicator; font-size: 16px; color: white; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: root.mode-indicator; font-size: 14px; color: white; horizontal-alignment: center; vertical-alignment: center; }
         }
 
-        Text { text: root.input-buffer; font-size: 18px; color: red; vertical-alignment: center; width: 20px; }
-        //Text { text: root.input-buffer; font-size: 18px; color: root.mode-color; vertical-alignment: center; width: 20px; }
+        Text { text: root.input-buffer; font-size: 16px; color: root.mode-color; vertical-alignment: center; width: 100px; }
 
         for assoc in root.associations: Rectangle {
-            min-width: 48px; height: 36px; border-radius: 4px;
+            min-width: 40px; height: 26px; border-radius: 4px;
             background: #f0f0f0ee; border-width: 1px; border-color: #d0d0d0a0;
-            Text { text: assoc.text; font-size: 24px; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: assoc.text; font-size: 16px; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.association-selected(assoc.text); } }
         }
     }
@@ -92,42 +91,41 @@ export component CandidateBar inherits Rectangle {
     HorizontalLayout {
         visible: !root.show-associations;
         padding-left: 8px;
-        padding-right: 8px;
-        padding-top: 6px;
-        padding-bottom: 6px;
-        spacing: 12px;
+        padding-right: 2px;
+        padding-top: 4px;
+        padding-bottom: 2px;
+        spacing: 6px;
+        alignment: start;
 
         Rectangle {
-            width: 36px; height: 36px; border-radius: 3px;
+            width: 28px; height: 22px; border-radius: 3px;
             background: root.mode-color;
-            Text { text: root.mode-indicator; font-size: 24px; color: white; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: root.mode-indicator; font-size: 14px; color: white; horizontal-alignment: center; vertical-alignment: center; }
         }
 
-        Text { text: root.input-buffer; font-size: 20px; color: red; vertical-alignment: center; width: 70px; }
+        Text { text: root.input-buffer; font-size: 16px; color: root.mode-color; vertical-alignment: center; width: 100px; }
 
         for cand[idx] in root.candidates: Rectangle {
-            min-width: 48px; height: 36px; border-radius: 4px;
+            min-width: 40px; height: 26px; border-radius: 4px;
             background: idx == 0 ? #0064b4 : #f0f0f0ee;
             border-width: 1px; border-color: idx == 0 ? #004680 : #d0d0d0a0;
-            Text { text: cand.text; font-size: 20px; color: idx == 0 ? white : #1e1e1e; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: cand.text; font-size: 16px; color: idx == 0 ? white : #1e1e1e; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.candidate-selected(idx); } }
         }
 
         Rectangle { horizontal-stretch: 1; }
 
         Rectangle {
-            height: 36px; width: 48px; border-radius: 4px;
-            background: root.has-prev-page ? #e0e0e0dd : #f0f0f040;
-            border-width: 1px; border-color: #c0c0c0a0;
-            Text { text: "◂"; font-size: 32px; color: root.has-prev-page ? #3fd90c : #bbb; horizontal-alignment: center; vertical-alignment: center; }
+            visible: root.has-prev-page; height: 26px; min-width: 48px;
+            border-radius: 4px; background: #e0e0e0dd;
+            Text { text: "◂"; font-size: 18px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.prev-page(); } }
         }
 
         Rectangle {
-            height: 36px; width: 48px; border-radius: 4px;
-            background: root.has-next-page ? #e0e0e0dd : #f0f0f040;
-            border-width: 1px; border-color: #c0c0c0a0;
-            Text { text: "▸"; font-size: 32px; color: root.has-next-page ? #3fd90c : #bbb; horizontal-alignment: center; vertical-alignment: center; }
+            visible: root.has-next-page; height: 26px; min-width: 48px;
+            border-radius: 4px; background: #e0e0e0dd;
+            Text { text: "▸"; font-size: 18px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.next-page(); } }
         }
     }
@@ -142,8 +140,9 @@ export component KeyboardRows inherits Rectangle {
     in property <[KeyValue]> row2-keys: [];
     in property <[KeyValue]> row3-keys: [];
     in property <[KeyValue]> row4-keys: [];
-    in property <[KeyValue]> func-keys: [];
     in property <string> active-key: "";
+    in property <bool> mode-lang-active: false;
+    in property <bool> mode-cn-active: false;
     in property <float> kb-opacity: 0.85;
 
     callback key-pressed(string);
@@ -151,10 +150,7 @@ export component KeyboardRows inherits Rectangle {
     vertical-stretch: 1;
 
     VerticalLayout {
-        padding-top: 4px;
-        padding-bottom: 10px;
-        padding-left: 4px;
-        padding-right: 4px;
+        padding: 4px;
         spacing: root.key-gap;
         alignment: center;
 
@@ -167,11 +163,17 @@ export component KeyboardRows inherits Rectangle {
         HorizontalLayout { alignment: center; spacing: root.key-gap;
             for k in root.row3-keys: KeyButton { key-label: k.label; key-id: k.id; key-w: k.key-width > 0px ? k.key-width : 56px; key-h: root.key-height; flashing: root.active-key == k.id; clicked => { root.key-pressed(k.id); } }
         }
-        HorizontalLayout { visible: root.row4-keys.length > 0; alignment: center; spacing: root.key-gap;
-            for k in root.row4-keys: KeyButton { key-label: k.label; key-id: k.id; key-w: k.key-width > 0px ? k.key-width : 56px; key-h: root.key-height; flashing: root.active-key == k.id; clicked => { root.key-pressed(k.id); } }
-        }
-        HorizontalLayout { alignment: center; spacing: root.key-gap;
-            for k in root.func-keys: KeyButton { key-label: k.label; key-id: k.id; key-w: k.key-width > 0px ? k.key-width : 64px; key-h: root.key-height; flashing: root.active-key == k.id; clicked => { root.key-pressed(k.id); } }
+        HorizontalLayout { alignment: start; spacing: root.key-gap; padding-left: 4px;
+            for k in root.row4-keys: KeyButton {
+                key-label: k.label;
+                key-id: k.id;
+                key-w: k.key-width > 0px ? k.key-width : 64px;
+                key-h: root.key-height;
+                flashing: root.active-key == k.id
+                    || (k.id == "mode_lang" && root.mode-lang-active)
+                    || (k.id == "mode_cn" && root.mode-cn-active);
+                clicked => { root.key-pressed(k.id); }
+            }
         }
     }
 }
