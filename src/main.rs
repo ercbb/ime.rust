@@ -10,5 +10,9 @@ fn main() {
         .nth(1)
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(5);
-    app::run(candidate_count);
+    let cn_double = std::env::args()
+        .nth(2)
+        .map(|s| s == "double")
+        .unwrap_or(false);
+    app::run(candidate_count, cn_double);
 }

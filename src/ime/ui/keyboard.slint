@@ -177,3 +177,377 @@ export component KeyboardRows inherits Rectangle {
         }
     }
 }
+
+// === Complete Keyboard Panel (self-contained control) ===
+
+export component KeyboardPanel inherits Rectangle {
+    // --- Layout ---
+    in property <length> kb-width: 600px;
+    in property <length> kb-height: 320px;
+    in property <length> key-height: 52px;
+    in property <length> key-gap: 4px;
+    in property <length> key-w: 56px;
+    in property <length> mode-w: 112px;
+    in property <length> space-w: 168px;
+    in property <length> ctrl-w: 64px;
+    in property <float> kb-opacity: 0.85;
+
+    // --- Mode ---
+    in property <bool> symbol-mode: false;
+    in property <bool> caps-lock: false;
+    in property <string> mode-tag: "full"; // "full" | "double" | "english" | "symbols"
+    in property <string> cn-method: "full"; // "full" | "double" — fixed at startup
+
+    // --- Data ---
+    in-out property <string> output-text: "";
+    in property <string> input-buffer: "";
+    in property <string> mode-indicator: "中";
+    in property <color> mode-color: #0078d7;
+    in property <[CandidateItem]> candidates: [];
+    in property <[CandidateItem]> associations: [];
+    in property <bool> show-associations: false;
+    in property <bool> has-prev-page: false;
+    in property <bool> has-next-page: false;
+    in-out property <bool> cursor-visible: true;
+    in-out property <string> active-key: "";
+
+    // --- Callbacks ---
+    callback key-pressed(string);
+    callback candidate-selected(int);
+    callback association-selected(string);
+    callback prev-page();
+    callback next-page();
+    callback hide-keyboard();
+
+    // --- Key definitions ---
+    property <[string]> letter-row1: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
+    property <[string]> letter-row2: ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
+    property <[string]> letter-row3: ["z", "x", "c", "v", "b", "n", "m"];
+    property <[string]> symbol-row1: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    property <[string]> symbol-row2: ["，", "。", "？", "！", "、", "：", "；", "\"", "@"];
+    property <[string]> symbol-row3: ["￥", "（", "）", "【", "】", "《", "》"];
+
+    // --- Timers ---
+    timer := Timer {
+        interval: 530ms;
+        running: true;
+        triggered => {
+            root.cursor-visible = !root.cursor-visible;
+        }
+    }
+
+    flash-timer := Timer {
+        interval: 120ms;
+        running: false;
+        triggered => {
+            root.active-key = "";
+            flash-timer.running = false;
+        }
+    }
+
+    VerticalLayout {
+        padding: 0px;
+        spacing: 0px;
+
+        // Keyboard body
+        Rectangle {
+            height: root.kb-height;
+            opacity: root.kb-opacity;
+
+            HorizontalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: root.kb-width;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: #b0b0b0c0;
+                    background: #f0f0f0e0;
+
+                    VerticalLayout {
+                        padding: 0px;
+                        spacing: 0px;
+
+                        // Edit area
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 10px;
+                            padding-top: 8px;
+                            padding-bottom: 4px;
+                            Rectangle {
+                                background: #ffffff;
+                                border-radius: 4px;
+                                border-width: 1px;
+                                border-color: #cccccc;
+                                min-height: 40px;
+                                padding: 4px;
+                                horizontal-stretch: 1;
+                                clip: true;
+                                Text {
+                                    text: root.output-text == "" ? "" : root.output-text + (root.cursor-visible ? "|" : " ");
+                                    font-size: 18px;
+                                    color: #1e1e1e;
+                                }
+                            }
+                        }
+
+                        // Candidate bar
+                        CandidateBar {
+                            mode-indicator: root.mode-indicator;
+                            mode-color: root.mode-color;
+                            input-buffer: root.input-buffer;
+                            candidates: root.candidates;
+                            associations: root.associations;
+                            show-associations: root.show-associations;
+                            has-prev-page: root.has-prev-page;
+                            has-next-page: root.has-next-page;
+                            candidate-selected(idx) => { root.candidate-selected(idx); }
+                            association-selected(text) => { root.association-selected(text); }
+                            prev-page() => { root.prev-page(); }
+                            next-page() => { root.next-page(); }
+                        }
+
+                        // Keyboard rows
+                        VerticalLayout {
+                            padding: 4px;
+                            spacing: root.key-gap;
+                            alignment: center;
+
+                            // Row 1 — symbol mode
+                            if root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                for k in root.symbol-row1: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                            }
+                            // Row 1 — letter mode
+                            if !root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                for k in root.letter-row1: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                            }
+
+                            // Row 2 — symbol mode
+                            if root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                for k in root.symbol-row2: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                            }
+                            // Row 2 — letter mode
+                            if !root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                for k in root.letter-row2: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                            }
+
+                            // Row 3 — symbol mode
+                            if root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                KeyButton {
+                                    key-label: "~";
+                                    key-id: "~";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "~";
+                                    clicked => {
+                                        root.active-key = "~";
+                                        flash-timer.running = true;
+                                        root.key-pressed("~");
+                                    }
+                                }
+                                for k in root.symbol-row3: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "⏎";
+                                    key-id: "enter";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "enter";
+                                    clicked => {
+                                        root.active-key = "enter";
+                                        flash-timer.running = true;
+                                        root.key-pressed("enter");
+                                    }
+                                }
+                            }
+                            // Row 3 — letter mode
+                            if !root.symbol-mode: HorizontalLayout {
+                                alignment: center;
+                                spacing: root.key-gap;
+                                KeyButton {
+                                    key-label: root.caps-lock ? "CAP" : "cap";
+                                    key-id: "caps_lock";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "caps_lock";
+                                    clicked => {
+                                        root.active-key = "caps_lock";
+                                        flash-timer.running = true;
+                                        root.key-pressed("caps_lock");
+                                    }
+                                }
+                                for k in root.letter-row3: KeyButton {
+                                    key-label: k;
+                                    key-id: k;
+                                    key-w: root.key-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == k;
+                                    clicked => {
+                                        root.active-key = k;
+                                        flash-timer.running = true;
+                                        root.key-pressed(k);
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "⏎";
+                                    key-id: "enter";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "enter";
+                                    clicked => {
+                                        root.active-key = "enter";
+                                        flash-timer.running = true;
+                                        root.key-pressed("enter");
+                                    }
+                                }
+                            }
+
+                            // Row 4 (common)
+                            HorizontalLayout {
+                                alignment: start;
+                                spacing: root.key-gap;
+                                padding-left: 4px;
+                                KeyButton {
+                                    key-label: "英文";
+                                    key-id: "mode_en";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "mode_en";
+                                    clicked => {
+                                        root.active-key = "mode_en";
+                                        flash-timer.running = true;
+                                        root.key-pressed("mode_en");
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "数字";
+                                    key-id: "mode_num";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "mode_num";
+                                    clicked => {
+                                        root.active-key = "mode_num";
+                                        flash-timer.running = true;
+                                        root.key-pressed("mode_num");
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: root.cn-method == "double" ? "双拼" : "全拼";
+                                    key-id: "mode_cn";
+                                    key-w: root.mode-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "mode_cn";
+                                    clicked => {
+                                        root.active-key = "mode_cn";
+                                        flash-timer.running = true;
+                                        root.key-pressed("mode_cn");
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "空格";
+                                    key-id: "space";
+                                    key-w: root.space-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "space";
+                                    clicked => {
+                                        root.active-key = "space";
+                                        flash-timer.running = true;
+                                        root.key-pressed("space");
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "⌫";
+                                    key-id: "backspace";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "backspace";
+                                    clicked => {
+                                        root.active-key = "backspace";
+                                        flash-timer.running = true;
+                                        root.key-pressed("backspace");
+                                    }
+                                }
+                                KeyButton {
+                                    key-label: "收起";
+                                    key-id: "hide_key";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "hide_key";
+                                    clicked => {
+                                        root.active-key = "hide_key";
+                                        flash-timer.running = true;
+                                        root.hide-keyboard();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
