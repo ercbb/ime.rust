@@ -38,12 +38,20 @@ export component MainWindow inherits Window {
     in-out property <string> cn-method: "full";
     in-out property <bool> show-ime: false;
 
+    // Per-box text buffers
+    in-out property <string> text-english: "good boy";
+    in-out property <string> text-symbols: "12345";
+    in-out property <string> text-full: "全拼";
+    in-out property <string> text-double: "双拼";
+    in-out property <int> active-box: -1;
+
     // --- Callbacks to Rust ---
     callback key-pressed(string);
     callback candidate-selected(int);
     callback association-selected(string);
     callback prev-page();
     callback next-page();
+    callback show-keyboard-with-mode(string);
     callback show-keyboard();
     callback hide-keyboard();
 
@@ -59,32 +67,139 @@ export component MainWindow inherits Window {
         padding: 0px;
         spacing: 0px;
 
-        // === Text Display Area (click to show IME) ===
+        // === Text Output Display ===
+        Rectangle {
+            height: 36px;
+            background: transparent;
+
+            Text {
+                text: root.output-text == "" ? "" : root.output-text + "|";
+                font-size: 18px;
+                color: #fff;
+                vertical-alignment: center;
+            }
+        }
+
+        // === Four Mode-specific Text Boxes ===
         Rectangle {
             vertical-stretch: 1;
             background: transparent;
 
-            VerticalLayout {
+            GridLayout {
                 padding: 8px;
+                spacing: 8px;
 
-                Text {
-                    text: "输入区域 (点击弹出键盘)";
-                    font-size: 12px;
-                    color: #ddd;
-                }
+                Row {
+                    // English mode box
+                    Rectangle {
+                        background: root.active-box == 0 ? #ffffff30 : #ffffff18;
+                        border-radius: 8px;
+                        border-width: root.active-box == 0 ? 2px : 1px;
+                        border-color: root.active-box == 0 ? #008cf0 : #ffffff33;
+                        padding: 8px;
+                        min-height: 80px;
 
-                ScrollView {
-                    Text {
-                        text: root.output-text == "" ? "在此输入文本..." : root.output-text + "|";
-                        font-size: 20px;
-                        color: root.output-text == "" ? #bbb : #fff;
-                        wrap: word-wrap;
+                        VerticalLayout {
+                            Text {
+                                text: "english";
+                                font-size: 11px;
+                                color: #aaa;
+                            }
+                            Text {
+                                text: root.text-english;
+                                font-size: 18px;
+                                color: #fff;
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => { root.show-keyboard-with-mode("english"); }
+                        }
+                    }
+
+                    // Symbols (numbers) mode box
+                    Rectangle {
+                        background: root.active-box == 1 ? #ffffff30 : #ffffff18;
+                        border-radius: 8px;
+                        border-width: root.active-box == 1 ? 2px : 1px;
+                        border-color: root.active-box == 1 ? #008cf0 : #ffffff33;
+                        padding: 8px;
+                        min-height: 80px;
+
+                        VerticalLayout {
+                            Text {
+                                text: "symbols";
+                                font-size: 11px;
+                                color: #aaa;
+                            }
+                            Text {
+                                text: root.text-symbols;
+                                font-size: 18px;
+                                color: #fff;
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => { root.show-keyboard-with-mode("symbols"); }
+                        }
                     }
                 }
-            }
 
-            TouchArea {
-                clicked => { root.show-keyboard(); }
+                Row {
+                    // Chinese full pinyin mode box
+                    Rectangle {
+                        background: root.active-box == 2 ? #ffffff30 : #ffffff18;
+                        border-radius: 8px;
+                        border-width: root.active-box == 2 ? 2px : 1px;
+                        border-color: root.active-box == 2 ? #008cf0 : #ffffff33;
+                        padding: 8px;
+                        min-height: 80px;
+
+                        VerticalLayout {
+                            Text {
+                                text: "全拼";
+                                font-size: 11px;
+                                color: #aaa;
+                            }
+                            Text {
+                                text: root.text-full;
+                                font-size: 18px;
+                                color: #fff;
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => { root.show-keyboard-with-mode("full"); }
+                        }
+                    }
+
+                    // Chinese double pinyin mode box
+                    Rectangle {
+                        background: root.active-box == 3 ? #ffffff30 : #ffffff18;
+                        border-radius: 8px;
+                        border-width: root.active-box == 3 ? 2px : 1px;
+                        border-color: root.active-box == 3 ? #008cf0 : #ffffff33;
+                        padding: 8px;
+                        min-height: 80px;
+
+                        VerticalLayout {
+                            Text {
+                                text: "双拼";
+                                font-size: 11px;
+                                color: #aaa;
+                            }
+                            Text {
+                                text: root.text-double;
+                                font-size: 18px;
+                                color: #fff;
+                            }
+                        }
+
+                        TouchArea {
+                            clicked => { root.show-keyboard-with-mode("double"); }
+                        }
+                    }
+                }
             }
         }
 

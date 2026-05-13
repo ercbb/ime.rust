@@ -223,7 +223,7 @@ export component KeyboardPanel inherits Rectangle {
     property <[string]> letter-row1: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
     property <[string]> letter-row2: ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
     property <[string]> letter-row3: ["z", "x", "c", "v", "b", "n", "m"];
-    property <[string]> symbol-row1: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+    property <[string]> symbol-row1: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
     property <[string]> symbol-row2: ["，", "。", "？", "！", "、", "：", "；", "\"", "@"];
     property <[string]> symbol-row3: ["￥", "（", "）", "【", "】", "《", "》"];
 
@@ -476,7 +476,7 @@ export component KeyboardPanel inherits Rectangle {
                                     key-id: "mode_en";
                                     key-w: root.ctrl-w;
                                     key-h: root.key-height;
-                                    flashing: root.active-key == "mode_en";
+                                    flashing: root.active-key == "mode_en" || root.mode-tag == "english";
                                     clicked => {
                                         root.active-key = "mode_en";
                                         flash-timer.running = true;
@@ -488,7 +488,7 @@ export component KeyboardPanel inherits Rectangle {
                                     key-id: "mode_num";
                                     key-w: root.ctrl-w;
                                     key-h: root.key-height;
-                                    flashing: root.active-key == "mode_num";
+                                    flashing: root.active-key == "mode_num" || root.mode-tag == "symbols";
                                     clicked => {
                                         root.active-key = "mode_num";
                                         flash-timer.running = true;
@@ -500,7 +500,7 @@ export component KeyboardPanel inherits Rectangle {
                                     key-id: "mode_cn";
                                     key-w: root.mode-w;
                                     key-h: root.key-height;
-                                    flashing: root.active-key == "mode_cn";
+                                    flashing: root.active-key == "mode_cn" || root.mode-tag == "full" || root.mode-tag == "double";
                                     clicked => {
                                         root.active-key = "mode_cn";
                                         flash-timer.running = true;
