@@ -209,6 +209,8 @@ export component KeyboardPanel inherits Rectangle {
     in property <bool> has-prev-page: false;
     in property <bool> has-next-page: false;
     in-out property <bool> cursor-visible: true;
+    in property <string> text-before-cursor: "";
+    in property <string> text-after-cursor: "";
     in-out property <string> active-key: "";
 
     // --- Callbacks ---
@@ -280,13 +282,30 @@ export component KeyboardPanel inherits Rectangle {
                                 border-width: 1px;
                                 border-color: #cccccc;
                                 min-height: 40px;
-                                padding: 4px;
                                 horizontal-stretch: 1;
                                 clip: true;
-                                Text {
-                                    text: root.output-text == "" ? "" : root.output-text + (root.cursor-visible ? "|" : " ");
-                                    font-size: 18px;
-                                    color: #1e1e1e;
+                                HorizontalLayout {
+                                    padding: 4px;
+                                    spacing: 0px;
+                                    alignment: start;
+                                    Text {
+                                        text: root.text-before-cursor;
+                                        font-size: 18px;
+                                        color: #1e1e1e;
+                                        horizontal-alignment: left;
+                                    }
+                                    Rectangle {
+                                        width: 2px;
+                                        height: 24px;
+                                        background: root.cursor-visible ? #0078d7 : transparent;
+                                    }
+                                    Text {
+                                        text: root.text-after-cursor;
+                                        font-size: 18px;
+                                        color: #1e1e1e;
+                                        horizontal-alignment: left;
+                                        horizontal-stretch: 1;
+                                    }
                                 }
                             }
                         }
@@ -350,7 +369,7 @@ export component KeyboardPanel inherits Rectangle {
 
                             // Row 2 — symbol mode
                             if root.symbol-mode: HorizontalLayout {
-                                alignment: center;
+                                alignment: start;
                                 spacing: root.key-gap;
                                 for k in root.symbol-row2: KeyButton {
                                     key-label: k;
@@ -364,10 +383,22 @@ export component KeyboardPanel inherits Rectangle {
                                         root.key-pressed(k);
                                     }
                                 }
+                                KeyButton {
+                                    key-label: "⌫";
+                                    key-id: "backspace";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "backspace";
+                                    clicked => {
+                                        root.active-key = "backspace";
+                                        flash-timer.running = true;
+                                        root.key-pressed("backspace");
+                                    }
+                                }
                             }
                             // Row 2 — letter mode
                             if !root.symbol-mode: HorizontalLayout {
-                                alignment: center;
+                                alignment: start;
                                 spacing: root.key-gap;
                                 for k in root.letter-row2: KeyButton {
                                     key-label: k;
@@ -381,11 +412,23 @@ export component KeyboardPanel inherits Rectangle {
                                         root.key-pressed(k);
                                     }
                                 }
+                                KeyButton {
+                                    key-label: "⌫";
+                                    key-id: "backspace";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "backspace";
+                                    clicked => {
+                                        root.active-key = "backspace";
+                                        flash-timer.running = true;
+                                        root.key-pressed("backspace");
+                                    }
+                                }
                             }
 
                             // Row 3 — symbol mode
                             if root.symbol-mode: HorizontalLayout {
-                                alignment: center;
+                                alignment: start;
                                 spacing: root.key-gap;
                                 KeyButton {
                                     key-label: "~";
@@ -414,7 +457,7 @@ export component KeyboardPanel inherits Rectangle {
                                 KeyButton {
                                     key-label: "⏎";
                                     key-id: "enter";
-                                    key-w: root.ctrl-w;
+                                    key-w: root.key-w * 2;
                                     key-h: root.key-height;
                                     flashing: root.active-key == "enter";
                                     clicked => {
@@ -426,7 +469,7 @@ export component KeyboardPanel inherits Rectangle {
                             }
                             // Row 3 — letter mode
                             if !root.symbol-mode: HorizontalLayout {
-                                alignment: center;
+                                alignment: start;
                                 spacing: root.key-gap;
                                 KeyButton {
                                     key-label: root.caps-lock ? "CAP" : "cap";
@@ -455,7 +498,7 @@ export component KeyboardPanel inherits Rectangle {
                                 KeyButton {
                                     key-label: "⏎";
                                     key-id: "enter";
-                                    key-w: root.ctrl-w;
+                                    key-w: root.key-w * 2;
                                     key-h: root.key-height;
                                     flashing: root.active-key == "enter";
                                     clicked => {
@@ -498,7 +541,7 @@ export component KeyboardPanel inherits Rectangle {
                                 KeyButton {
                                     key-label: root.cn-method == "double" ? "双拼" : "全拼";
                                     key-id: "mode_cn";
-                                    key-w: root.mode-w;
+                                    key-w: root.ctrl-w;
                                     key-h: root.key-height;
                                     flashing: root.active-key == "mode_cn" || root.mode-tag == "full" || root.mode-tag == "double";
                                     clicked => {
@@ -520,19 +563,34 @@ export component KeyboardPanel inherits Rectangle {
                                     }
                                 }
                                 KeyButton {
-                                    key-label: "⌫";
-                                    key-id: "backspace";
+                                    key-label: "◂";
+                                    key-id: "cursor_left";
                                     key-w: root.ctrl-w;
                                     key-h: root.key-height;
-                                    flashing: root.active-key == "backspace";
+                                    flashing: root.active-key == "cursor_left";
                                     clicked => {
-                                        root.active-key = "backspace";
+                                        root.active-key = "cursor_left";
                                         flash-timer.running = true;
-                                        root.key-pressed("backspace");
+                                        root.key-pressed("cursor_left");
                                     }
                                 }
                                 KeyButton {
-                                    key-label: "收起";
+                                    key-label: "▸";
+                                    key-id: "cursor_right";
+                                    key-w: root.ctrl-w;
+                                    key-h: root.key-height;
+                                    flashing: root.active-key == "cursor_right";
+                                    clicked => {
+                                        root.active-key = "cursor_right";
+                                        flash-timer.running = true;
+                                        root.key-pressed("cursor_right");
+                                    }
+                                }
+                                Rectangle {
+                                    horizontal-stretch: 1;
+                                }
+                                KeyButton {
+                                    key-label: "放弃";
                                     key-id: "hide_key";
                                     key-w: root.ctrl-w;
                                     key-h: root.key-height;
@@ -540,7 +598,7 @@ export component KeyboardPanel inherits Rectangle {
                                     clicked => {
                                         root.active-key = "hide_key";
                                         flash-timer.running = true;
-                                        root.hide-keyboard();
+                                        root.key-pressed("hide_key");
                                     }
                                 }
                             }

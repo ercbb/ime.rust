@@ -24,6 +24,8 @@ export component MainWindow inherits Window {
 
     // --- Data Properties ---
     in-out property <string> output-text: "";
+    in-out property <string> text-before-cursor: "";
+    in-out property <string> text-after-cursor: "";
     in-out property <string> input-buffer: "";
     in-out property <string> mode-indicator: "中";
     in-out property <color> mode-color: #0078d7;
@@ -228,6 +230,8 @@ export component MainWindow inherits Window {
             show-associations: root.show-associations;
             has-prev-page: root.has-prev-page;
             has-next-page: root.has-next-page;
+            text-before-cursor: root.text-before-cursor;
+            text-after-cursor: root.text-after-cursor;
 
             key-pressed(id) => { root.key-pressed(id); }
             candidate-selected(idx) => { root.candidate-selected(idx); }

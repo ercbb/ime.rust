@@ -91,6 +91,31 @@ impl Dictionary {
         results
     }
 
+    /// 查找精确匹配该拼音键的词组（不含单字）
+    pub fn lookup_phrases_exact(&self, pinyin_key: &str) -> Vec<DictEntry> {
+        self.phrases
+            .get(pinyin_key)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// 查找前缀匹配该拼音键的词组（不含单字）
+    pub fn lookup_phrases_prefix(&self, pinyin_key: &str) -> Vec<DictEntry> {
+        let mut results = Vec::new();
+        if let Some(entries) = self.phrases.get(pinyin_key) {
+            results.extend(entries.iter().cloned());
+        }
+        let prefix = format!("{}'", pinyin_key);
+        for (key, entries) in &self.phrases {
+            if key.starts_with(&prefix) {
+                results.extend(entries.iter().cloned());
+            }
+        }
+        results.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
+        results.dedup_by(|a, b| a.text == b.text);
+        results
+    }
+
 }
 
 fn parse_dict_data(data: &str) -> HashMap<String, Vec<DictEntry>> {

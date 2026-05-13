@@ -40,6 +40,20 @@ impl KbLayout {
 /// 推送引擎状态到 MainWindow Slint 属性
 pub fn update_ui(window: &MainWindow, engine: &ImeEngine) {
     window.set_output_text(engine.output_text.as_str().into());
+
+    let before: String = engine
+        .output_text
+        .chars()
+        .take(engine.cursor_pos)
+        .collect();
+    let after: String = engine
+        .output_text
+        .chars()
+        .skip(engine.cursor_pos)
+        .collect();
+    window.set_text_before_cursor(before.as_str().into());
+    window.set_text_after_cursor(after.as_str().into());
+
     window.set_input_buffer(engine.input_buffer.as_str().into());
 
     let (indicator, color, tag) = match engine.mode {

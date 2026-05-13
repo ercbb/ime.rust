@@ -97,6 +97,7 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             // Load new box's text into engine
             engine.output_text = buffers.borrow()[box_idx as usize].clone();
             engine.toggle_mode(new_mode);
+            engine.cursor_pos = engine.output_text.chars().count();
             *active_box.borrow_mut() = box_idx;
 
             if let Some(win) = window_weak.upgrade() {
@@ -129,9 +130,19 @@ pub fn run(candidate_count: usize, cn_double: bool) {
     });
 
     main_window.on_hide_keyboard({
+        let engine_rc = engine_rc.clone();
         let window_weak = window_weak.clone();
+        let buffers = buffers.clone();
+        let active_box = active_box.clone();
         move || {
             if let Some(win) = window_weak.upgrade() {
+                // 放弃：恢复 engine.output_text 为原始值
+                let mut engine = engine_rc.borrow_mut();
+                let idx = *active_box.borrow();
+                if idx >= 0 && idx < 4 {
+                    engine.output_text = buffers.borrow()[idx as usize].clone();
+                }
+                engine.cursor_pos = engine.output_text.chars().count();
                 win.set_show_ime(false);
             }
         }
@@ -161,6 +172,17 @@ pub fn run(candidate_count: usize, cn_double: bool) {
                 engine.toggle_mode(target);
             } else if key_str == "caps_lock" {
                 engine.toggle_caps_lock();
+            } else if key_str == "cursor_left" {
+                if engine.cursor_pos > 0 {
+                    engine.cursor_pos -= 1;
+                }
+            } else if key_str == "cursor_right" {
+                let len = engine.output_text.chars().count();
+                if engine.cursor_pos < len {
+                    engine.cursor_pos += 1;
+                }
+            } else if key_str == "hide_key" {
+                // 放弃：不做任何 engine 操作
             } else {
                 engine.process_key(key_str);
             }
@@ -168,11 +190,22 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             if let Some(win) = window_weak.upgrade() {
                 layout::update_ui(&win, &engine);
 
-                // Sync active box text back
-                let idx = *active_box.borrow();
-                if idx >= 0 && idx < 4 {
-                    buffers.borrow_mut()[idx as usize] = engine.output_text.clone();
-                    set_box_text(&win, idx, &engine.output_text);
+                if key_str == "enter" {
+                    // 回车：确认写回并隐藏
+                    let idx = *active_box.borrow();
+                    if idx >= 0 && idx < 4 {
+                        buffers.borrow_mut()[idx as usize] = engine.output_text.clone();
+                        set_box_text(&win, idx, &engine.output_text);
+                    }
+                    win.set_show_ime(false);
+                } else if key_str == "hide_key" {
+                    // 放弃：恢复原始值，不写回，直接隐藏
+                    let idx = *active_box.borrow();
+                    if idx >= 0 && idx < 4 {
+                        engine.output_text = buffers.borrow()[idx as usize].clone();
+                    }
+                    engine.cursor_pos = engine.output_text.chars().count();
+                    win.set_show_ime(false);
                 }
             }
         }
@@ -182,20 +215,12 @@ pub fn run(candidate_count: usize, cn_double: bool) {
     main_window.on_candidate_selected({
         let engine_rc = engine_rc.clone();
         let window_weak = window_weak.clone();
-        let buffers = buffers.clone();
-        let active_box = active_box.clone();
         move |idx: i32| {
             let mut engine = engine_rc.borrow_mut();
             let key = (idx + 1).to_string();
             engine.process_key(&key);
             if let Some(win) = window_weak.upgrade() {
                 layout::update_ui(&win, &engine);
-
-                let box_idx = *active_box.borrow();
-                if box_idx >= 0 && box_idx < 4 {
-                    buffers.borrow_mut()[box_idx as usize] = engine.output_text.clone();
-                    set_box_text(&win, box_idx, &engine.output_text);
-                }
             }
         }
     });
@@ -204,19 +229,11 @@ pub fn run(candidate_count: usize, cn_double: bool) {
     main_window.on_association_selected({
         let engine_rc = engine_rc.clone();
         let window_weak = window_weak.clone();
-        let buffers = buffers.clone();
-        let active_box = active_box.clone();
         move |text: SharedString| {
             let mut engine = engine_rc.borrow_mut();
             engine.select_association(text.as_str());
             if let Some(win) = window_weak.upgrade() {
                 layout::update_ui(&win, &engine);
-
-                let box_idx = *active_box.borrow();
-                if box_idx >= 0 && box_idx < 4 {
-                    buffers.borrow_mut()[box_idx as usize] = engine.output_text.clone();
-                    set_box_text(&win, box_idx, &engine.output_text);
-                }
             }
         }
     });

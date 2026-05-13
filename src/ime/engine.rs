@@ -29,6 +29,7 @@ pub struct ImeEngine {
     pub candidate_page: usize,
     pub page_size: usize,
     pub output_text: String,
+    pub cursor_pos: usize,
     pub caps_lock: bool,
 
     // 内部状态
@@ -57,6 +58,7 @@ impl ImeEngine {
             candidate_page: 0,
             page_size: 6,
             output_text: String::new(),
+            cursor_pos: 0,
             caps_lock: false,
             parsed_syllables: Vec::new(),
             remaining_buffer: String::new(),
@@ -106,11 +108,8 @@ impl ImeEngine {
                     self.input_buffer.pop();
                     self.update_candidates();
                     None
-                } else if !self.output_text.is_empty() {
-                    // 删除输出文本的最后一个字符
-                    self.output_text.pop();
-                    None
                 } else {
+                    self.delete_before_cursor();
                     None
                 }
             }
@@ -119,11 +118,11 @@ impl ImeEngine {
                 if !self.candidates.is_empty() {
                     self.select_candidate(0)
                 } else if self.input_buffer.is_empty() {
-                    self.output_text.push(' ');
+                    self.insert_at_cursor(" ");
                     None
                 } else {
                     // 无候选词，直接将输入作为英文字符输出
-                    self.output_text.push_str(&self.input_buffer.clone());
+                    self.insert_at_cursor(&self.input_buffer.clone());
                     self.input_buffer.clear();
                     self.candidates.clear();
                     None
@@ -133,7 +132,7 @@ impl ImeEngine {
             "enter" => {
                 if !self.input_buffer.is_empty() {
                     let text = self.input_buffer.clone();
-                    self.output_text.push_str(&text);
+                    self.insert_at_cursor(&text);
                     self.input_buffer.clear();
                     self.candidates.clear();
                     None
@@ -158,7 +157,7 @@ impl ImeEngine {
             }
             // 非 ASCII 单字符直接上屏（如中文标点符号）
             c if c.chars().count() == 1 && !c.chars().next().unwrap().is_ascii() => {
-                self.output_text.push_str(c);
+                self.insert_at_cursor(c);
                 None
             }
             _ => None,
@@ -178,10 +177,8 @@ impl ImeEngine {
                     self.input_buffer.pop();
                     self.update_candidates();
                     None
-                } else if !self.output_text.is_empty() {
-                    self.output_text.pop();
-                    None
                 } else {
+                    self.delete_before_cursor();
                     None
                 }
             }
@@ -189,10 +186,10 @@ impl ImeEngine {
                 if !self.candidates.is_empty() {
                     self.select_candidate(0)
                 } else if self.input_buffer.is_empty() {
-                    self.output_text.push(' ');
+                    self.insert_at_cursor(" ");
                     None
                 } else {
-                    self.output_text.push_str(&self.input_buffer.clone());
+                    self.insert_at_cursor(&self.input_buffer.clone());
                     self.input_buffer.clear();
                     self.candidates.clear();
                     None
@@ -201,7 +198,7 @@ impl ImeEngine {
             "enter" => {
                 if !self.input_buffer.is_empty() {
                     let text = self.input_buffer.clone();
-                    self.output_text.push_str(&text);
+                    self.insert_at_cursor(&text);
                     self.input_buffer.clear();
                     self.candidates.clear();
                     None
@@ -224,7 +221,7 @@ impl ImeEngine {
             }
             // 非 ASCII 单字符直接上屏（如中文标点符号）
             c if c.chars().count() == 1 && !c.chars().next().unwrap().is_ascii() => {
-                self.output_text.push_str(c);
+                self.insert_at_cursor(c);
                 None
             }
             _ => None,
@@ -235,24 +232,24 @@ impl ImeEngine {
     fn process_english(&mut self, key: &str) -> Option<String> {
         match key {
             "space" => {
-                self.output_text.push(' ');
+                self.insert_at_cursor(" ");
                 None
             }
             "backspace" => {
-                self.output_text.pop();
+                self.delete_before_cursor();
                 None
             }
             "enter" => Some("enter".to_string()),
             c if c.len() == 1 && c.chars().next().map_or(false, |ch| ch.is_ascii_alphabetic()) => {
                 if self.caps_lock {
-                    self.output_text.push_str(&c.to_uppercase());
+                    self.insert_at_cursor(&c.to_uppercase());
                 } else {
-                    self.output_text.push_str(c);
+                    self.insert_at_cursor(c);
                 }
                 None
             }
             c => {
-                self.output_text.push_str(c);
+                self.insert_at_cursor(c);
                 None
             }
         }
@@ -262,19 +259,16 @@ impl ImeEngine {
     fn process_symbol(&mut self, key: &str) -> Option<String> {
         match key {
             "backspace" => {
-                self.output_text.pop();
+                self.delete_before_cursor();
                 None
             }
             "space" => {
-                self.output_text.push(' ');
+                self.insert_at_cursor(" ");
                 None
             }
-            "enter" => {
-                self.output_text.push('\n');
-                None
-            }
+            "enter" => Some("enter".to_string()),
             _ => {
-                self.output_text.push_str(key);
+                self.insert_at_cursor(key);
                 None
             }
         }
@@ -314,39 +308,68 @@ impl ImeEngine {
         self.remaining_buffer = remaining.clone();
 
         if let Some(ref dict) = self.dict {
-            // 查询候选词
-            let mut entries: Vec<DictEntry> = Vec::new();
+            let mut chars: Vec<DictEntry> = Vec::new();
+            let mut phrases: Vec<DictEntry> = Vec::new();
 
-            // 优先查找完全匹配的词组
-            if !syllables.is_empty() {
-                let exact = dict.lookup_exact(&syllables);
-                entries.extend(exact);
+            // 1. 单字（从最后一个音节查）
+            if let Some(last) = syllables.last() {
+                chars = dict.lookup_chars(last);
             }
 
-            // 查找前缀匹配的词组
+            // 2. 词组
             if !syllables.is_empty() {
-                let prefix = dict.lookup_prefix(&syllables);
+                let pinyin_key = syllables.join("'");
+
+                // 精确匹配词组（仅多音节）
+                if syllables.len() > 1 {
+                    phrases.extend(dict.lookup_phrases_exact(&pinyin_key));
+                }
+
+                // 前缀匹配词组
+                let prefix = dict.lookup_phrases_prefix(&pinyin_key);
                 for entry in prefix {
-                    if !entries.iter().any(|e| e.text == entry.text) {
-                        entries.push(entry);
+                    if !phrases.iter().any(|e| e.text == entry.text) {
+                        phrases.push(entry);
                     }
                 }
             }
 
-            // 去重
-            entries.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
-            entries.dedup_by(|a, b| a.text == b.text);
-
-            // 应用用户频率
-            for entry in &mut entries {
+            // 应用用户频率（组内排序前）
+            for entry in chars.iter_mut().chain(phrases.iter_mut()) {
                 let boost = self.user_dict.freq_boost(&entry.text);
                 if boost > 0.0 {
                     entry.freq += boost;
                 }
             }
 
-            // 重新排序
-            entries.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
+            // 组内按频率排序
+            chars.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
+            phrases.sort_by(|a, b| b.freq.partial_cmp(&a.freq).unwrap_or(std::cmp::Ordering::Equal));
+
+            // 去重：词组中移除已在单字中出现的条目
+            phrases.retain(|p| !chars.iter().any(|c| c.text == p.text));
+
+            // 合并：多音节时精确匹配词组排最前，单音节时单字在前
+            let mut entries: Vec<DictEntry> = Vec::new();
+            if syllables.len() > 1 {
+                // 精确匹配词组 → 单字 → 其他词组
+                let pinyin_key = syllables.join("'");
+                let exact = dict.lookup_phrases_exact(&pinyin_key);
+                for e in exact {
+                    if !entries.iter().any(|x| x.text == e.text) {
+                        entries.push(e);
+                    }
+                }
+                entries.extend(chars);
+                for e in phrases {
+                    if !entries.iter().any(|x| x.text == e.text) {
+                        entries.push(e);
+                    }
+                }
+            } else {
+                entries.extend(chars);
+                entries.extend(phrases);
+            }
 
             // 转换为候选词
             self.candidates = entries
@@ -356,20 +379,6 @@ impl ImeEngine {
                     text: e.text,
                 })
                 .collect();
-
-            // 如果没有候选词但有输入，也查询单字
-            if self.candidates.is_empty() && !syllables.is_empty() {
-                if let Some(last) = syllables.last() {
-                    let char_entries = dict.lookup_chars(last);
-                    self.candidates = char_entries
-                        .into_iter()
-                        .take(50)
-                        .map(|e| Candidate {
-                            text: e.text,
-                        })
-                        .collect();
-                }
-            }
         }
     }
 
@@ -385,7 +394,7 @@ impl ImeEngine {
             self.user_dict.record_usage(&selected);
 
             // 输出到文本
-            self.output_text.push_str(&selected);
+            self.insert_at_cursor(&selected);
 
             // 清空输入状态
             self.input_buffer.clear();
@@ -410,7 +419,7 @@ impl ImeEngine {
 
     /// 选择联想建议
     pub fn select_association(&mut self, text: &str) {
-        self.output_text.push_str(text);
+        self.insert_at_cursor(text);
         self.user_dict.record_usage(text);
         self.last_input = text.to_string();
 
@@ -447,6 +456,38 @@ impl ImeEngine {
     /// 获取联想候选
     pub fn get_association_candidates(&self) -> &[String] {
         &self.association_candidates
+    }
+
+    /// 设置光标位置（按字符偏移，自动 clamp 到合法范围）
+    pub fn set_cursor(&mut self, pos: usize) {
+        let len = self.output_text.chars().count();
+        self.cursor_pos = pos.min(len);
+    }
+
+    /// 在光标位置插入文本，光标后移至插入文本末尾
+    fn insert_at_cursor(&mut self, text: &str) {
+        let byte_pos = self
+            .output_text
+            .char_indices()
+            .nth(self.cursor_pos)
+            .map(|(i, _)| i)
+            .unwrap_or(self.output_text.len());
+        self.output_text.insert_str(byte_pos, text);
+        self.cursor_pos += text.chars().count();
+    }
+
+    /// 删除光标前一个字符（若光标在开头则不操作）
+    fn delete_before_cursor(&mut self) {
+        if self.cursor_pos > 0 {
+            let byte_pos = self
+                .output_text
+                .char_indices()
+                .nth(self.cursor_pos - 1)
+                .map(|(i, _)| i)
+                .unwrap_or(0);
+            self.output_text.remove(byte_pos);
+            self.cursor_pos -= 1;
+        }
     }
 
     /// 切换输入模式
