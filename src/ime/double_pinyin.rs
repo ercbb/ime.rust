@@ -98,11 +98,11 @@ pub fn parse_double_pinyin(input: &str) -> (Vec<String>, String)
         let initial_key = chars[pos];
         let final_key = chars[pos + 1];
 
-        // 零声母情况：首键为 'o' 或声母键即韵母
         let initial = get_initial(initial_key);
 
         if let Some(init) = initial 
         {
+            // 正常声母+韵母
             let final_str = get_final(final_key);
             if let Some(fin) = final_str 
             {
@@ -113,8 +113,21 @@ pub fn parse_double_pinyin(input: &str) -> (Vec<String>, String)
                 let remaining: String = chars[pos..].iter().collect();
                 return (result, remaining);
             }
+        } else if matches!(initial_key, 'a' | 'e' | 'o') {
+            // 零声母：首键为 a/e/o，代表韵母的第一个字母
+            // 例如：安 an → aj (a + an→j)，恩 en → ef (e + en→f)，欧 ou → ob (o + ou→b)
+            let final_str = get_final(final_key);
+            if let Some(fin) = final_str 
+            {
+                // 零声母下 combine_initial_final("", fin) 直接返回 fin
+                let pinyin = combine_initial_final("", fin);
+                result.push(pinyin);
+            } else {
+                let remaining: String = chars[pos..].iter().collect();
+                return (result, remaining);
+            }
         } else {
-            // 不是有效的声母键
+            // 不是有效的声母键，也不是零声母标记
             let remaining: String = chars[pos..].iter().collect();
             return (result, remaining);
         }
@@ -389,5 +402,57 @@ mod tests
         assert_eq!(s, vec!["mo"]);
         let (s, _) = double_pinyin_to_syllables("fo");
         assert_eq!(s, vec!["fo"]);
+    }
+
+    // === 零声母测试 ===
+
+    #[test]
+    fn test_zero_initial_a() 
+    {
+        // 安 an → aj (a + an→j)
+        let (s, _) = double_pinyin_to_syllables("aj");
+        assert_eq!(s, vec!["an"]);
+        // 阿 a → aa (a + a→a)
+        let (s, _) = double_pinyin_to_syllables("aa");
+        assert_eq!(s, vec!["a"]);
+        // 爱 ai → al (a + ai→l)
+        let (s, _) = double_pinyin_to_syllables("al");
+        assert_eq!(s, vec!["ai"]);
+        // 奥 ao → ak (a + ao→k)
+        let (s, _) = double_pinyin_to_syllables("ak");
+        assert_eq!(s, vec!["ao"]);
+        // 昂 ang → ah (a + ang→h)
+        let (s, _) = double_pinyin_to_syllables("ah");
+        assert_eq!(s, vec!["ang"]);
+    }
+
+    #[test]
+    fn test_zero_initial_e() 
+    {
+        // 恩 en → ef (e + en→f)
+        let (s, _) = double_pinyin_to_syllables("ef");
+        assert_eq!(s, vec!["en"]);
+        // 诶 ei → ez (e + ei→z)
+        let (s, _) = double_pinyin_to_syllables("ez");
+        assert_eq!(s, vec!["ei"]);
+        // 鞥 eng → eg (e + eng→g)
+        let (s, _) = double_pinyin_to_syllables("eg");
+        assert_eq!(s, vec!["eng"]);
+    }
+
+    #[test]
+    fn test_zero_initial_o() 
+    {
+        // 欧 ou → ob (o + ou→b)
+        let (s, _) = double_pinyin_to_syllables("ob");
+        assert_eq!(s, vec!["ou"]);
+    }
+
+    #[test]
+    fn test_zero_initial_mixed() 
+    {
+        // 恩爱 en'ai → efal
+        let (s, _) = double_pinyin_to_syllables("efal");
+        assert_eq!(s, vec!["en", "ai"]);
     }
 }
