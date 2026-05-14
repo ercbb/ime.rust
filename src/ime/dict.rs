@@ -170,7 +170,13 @@ impl Dictionary
         {
             results.extend(entries.iter().cloned());
         }
-        let prefix = format!("{}'", pinyin_key);
+        // 若拼音键已含音节分隔符（已跨入下一音节），直接用键做前缀；
+        // 否则追加 ' 表示匹配该完整音节开头的词组
+        let prefix = if pinyin_key.contains('\'') {
+            pinyin_key.to_string()
+        } else {
+            format!("{}'", pinyin_key)
+        };
         for (key, entries) in &self.phrases 
         {
             if key.starts_with(&prefix) 

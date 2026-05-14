@@ -372,31 +372,43 @@ impl ImeEngine
             let mut chars: Vec<DictEntry> = Vec::new();
             let mut phrases: Vec<DictEntry> = Vec::new();
 
-            // 1. 单字（从最后一个音节查）
-            if let Some(last) = syllables.last() 
+            // 1. 单字（从所有已解析音节查）
+            for syl in &syllables 
             {
-                chars = dict.lookup_chars(last);
+                chars.extend(dict.lookup_chars(syl));
             }
+            // 去重
+            chars.sort_by(|a, b| {
+                b.freq
+                    .partial_cmp(&a.freq)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            chars.dedup_by(|a, b| a.text == b.text);
 
             // 2. 词组
-            if !syllables.is_empty() 
+            // 构建完整拼音键（包含未完成的音节前缀）
+            let base_key = syllables.join("'");
+            let pinyin_key = if remaining.is_empty() {
+                base_key
+            } else if base_key.is_empty() {
+                remaining.clone()
+            } else {
+                format!("{}'{}", base_key, remaining)
+            };
+
+            // 精确匹配词组（仅所有音节均已完整解析时）
+            if syllables.len() > 1 && remaining.is_empty() 
             {
-                let pinyin_key = syllables.join("'");
+                phrases.extend(dict.lookup_phrases_exact(&pinyin_key));
+            }
 
-                // 精确匹配词组（仅多音节）
-                if syllables.len() > 1 
+            // 前缀匹配词组（始终使用完整拼音键）
+            let prefix = dict.lookup_phrases_prefix(&pinyin_key);
+            for entry in prefix 
+            {
+                if !phrases.iter().any(|e| e.text == entry.text) 
                 {
-                    phrases.extend(dict.lookup_phrases_exact(&pinyin_key));
-                }
-
-                // 前缀匹配词组
-                let prefix = dict.lookup_phrases_prefix(&pinyin_key);
-                for entry in prefix 
-                {
-                    if !phrases.iter().any(|e| e.text == entry.text) 
-                    {
-                        phrases.push(entry);
-                    }
+                    phrases.push(entry);
                 }
             }
 
@@ -425,32 +437,19 @@ impl ImeEngine
             // 去重：词组中移除已在单字中出现的条目
             phrases.retain(|p| !chars.iter().any(|c| c.text == p.text));
 
-            // 合并：多音节时精确匹配词组排最前，单音节时单字在前
+            // 合并：有未完成音节或多音节时词组优先，纯单音节时单字在前
             let mut entries: Vec<DictEntry> = Vec::new();
-            if syllables.len() > 1 
+            if syllables.len() > 1 || !remaining.is_empty() 
             {
-                // 精确匹配词组 → 单字 → 其他词组
-                let pinyin_key = syllables.join("'");
-                let exact = dict.lookup_phrases_exact(&pinyin_key);
-                for e in exact 
-                {
-                    if !entries.iter().any(|x| x.text == e.text) 
-                    {
-                        entries.push(e);
-                    }
-                }
+                // 词组优先
+                entries.extend(phrases);
                 entries.extend(chars);
-                for e in phrases 
-                {
-                    if !entries.iter().any(|x| x.text == e.text) 
-                    {
-                        entries.push(e);
-                    }
-                }
             } else {
                 entries.extend(chars);
                 entries.extend(phrases);
             }
+            // 最终去重
+            entries.dedup_by(|a, b| a.text == b.text);
 
             // 转换为候选词
             self.candidates = entries
