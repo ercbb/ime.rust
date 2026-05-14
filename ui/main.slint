@@ -1,5 +1,5 @@
 import { Button, VerticalBox, HorizontalBox, LineEdit, ScrollView, GridBox, TextEdit } from "std-widgets.slint";
-import { CandidateItem, KeyboardPanel } from "../src/ime/ui/keyboard.slint";
+import { CandidateItem, KeyboardPanel, ImeState } from "../src/ime/ui/keyboard.slint";
 
 // === Main Window ===
 
@@ -9,38 +9,28 @@ export component MainWindow inherits Window {
     preferred-height: 480px;
     default-font-family: "Noto Sans CJK SC, PingFang SC, Microsoft YaHei, sans-serif";
 
-    // --- Layout Config ---
-    in-out property <length> kb-width: 600px;
-    in-out property <length> kb-height: 320px;
-    in-out property <length> kb-bottom-margin: 40px;
-    in-out property <length> key-height: 52px;
-    in-out property <length> key-gap: 4px;
-    in-out property <length> key-w: 56px;
-    in-out property <length> mode-w: 112px;
-    in-out property <length> space-w: 168px;
-    in-out property <length> ctrl-w: 64px;
-    in-out property <float> kb-opacity: 0.85;
+    // --- Host-only ---
     in-out property <image> bg-image: @image-url("assets/bg.png");
-
-    // --- Data Properties ---
-    in-out property <string> output-text: "";
-    in-out property <string> text-before-cursor: "";
-    in-out property <string> text-after-cursor: "";
-    in-out property <string> input-buffer: "";
-    in-out property <string> mode-indicator: "中";
-    in-out property <color> mode-color: #0078d7;
-    in-out property <[CandidateItem]> candidates: [];
-    in-out property <[CandidateItem]> associations: [];
-    in-out property <bool> show-associations: false;
-    in-out property <bool> has-prev-page: false;
-    in-out property <bool> has-next-page: false;
-    in-out property <bool> symbol-mode: false;
-    in-out property <bool> caps-lock: false;
-    in-out property <string> mode-tag: "full";
-    in-out property <string> cn-method: "full";
     in-out property <bool> show-ime: false;
 
-    // Per-box text buffers
+    // --- IME state (owned by host, synced to global for keyboard access) ---
+    in-out property <string> output-text <=> ImeState.output-text;
+    in-out property <string> text-before-cursor <=> ImeState.text-before-cursor;
+    in-out property <string> text-after-cursor <=> ImeState.text-after-cursor;
+    in-out property <string> input-buffer <=> ImeState.input-buffer;
+    in-out property <string> mode-indicator <=> ImeState.mode-indicator;
+    in-out property <color> mode-color <=> ImeState.mode-color;
+    in-out property <[CandidateItem]> candidates <=> ImeState.candidates;
+    in-out property <[CandidateItem]> associations <=> ImeState.associations;
+    in-out property <bool> show-associations <=> ImeState.show-associations;
+    in-out property <bool> has-prev-page <=> ImeState.has-prev-page;
+    in-out property <bool> has-next-page <=> ImeState.has-next-page;
+    in-out property <bool> symbol-mode <=> ImeState.symbol-mode;
+    in-out property <bool> caps-lock <=> ImeState.caps-lock;
+    in-out property <string> mode-tag <=> ImeState.mode-tag;
+    in-out property <string> cn-method <=> ImeState.cn-method;
+
+    // Per-box text buffers (host owns these)
     in-out property <string> text-english: "good boy";
     in-out property <string> text-symbols: "12345";
     in-out property <string> text-full: "全拼";
@@ -64,12 +54,12 @@ export component MainWindow inherits Window {
         height: 100%;
     }
 
-    // === Foreground layout ===
+    // === Main layout (always full height, never pushed by keyboard) ===
     VerticalLayout {
         padding: 0px;
         spacing: 0px;
 
-        // === Text Output Display ===
+        // Text Output Display
         Rectangle {
             height: 36px;
             background: transparent;
@@ -82,7 +72,7 @@ export component MainWindow inherits Window {
             }
         }
 
-        // === Four Mode-specific Text Boxes ===
+        // Four Mode-specific Text Boxes
         Rectangle {
             vertical-stretch: 1;
             background: transparent;
@@ -204,50 +194,56 @@ export component MainWindow inherits Window {
                 }
             }
         }
+    }
 
-        // === Keyboard Panel (self-contained control) ===
-        if root.show-ime: KeyboardPanel {
-            kb-width: root.kb-width;
-            kb-height: root.kb-height;
-            key-height: root.key-height;
-            key-gap: root.key-gap;
-            key-w: root.key-w;
-            mode-w: root.mode-w;
-            space-w: root.space-w;
-            ctrl-w: root.ctrl-w;
-            kb-opacity: root.kb-opacity;
-            symbol-mode: root.symbol-mode;
-            caps-lock: root.caps-lock;
-            mode-tag: root.mode-tag;
-            cn-method: root.cn-method;
+    // === Keyboard overlay (absolutely positioned, floats above main layout) ===
+    if root.show-ime: Rectangle {
+        x: 0;
+        y: root.height - 384px;
+        width: root.width;
+        height: 384px;
+        background: #00000050;
 
-            output-text <=> root.output-text;
-            input-buffer: root.input-buffer;
-            mode-indicator: root.mode-indicator;
-            mode-color: root.mode-color;
-            candidates: root.candidates;
-            associations: root.associations;
-            show-associations: root.show-associations;
-            has-prev-page: root.has-prev-page;
-            has-next-page: root.has-next-page;
-            text-before-cursor: root.text-before-cursor;
-            text-after-cursor: root.text-after-cursor;
+        // Catch-all touch area: eat clicks on empty space so they don't fall through to host
+        TouchArea { }
 
-            key-pressed(id) => { root.key-pressed(id); }
-            candidate-selected(idx) => { root.candidate-selected(idx); }
-            association-selected(text) => { root.association-selected(text); }
-            prev-page() => { root.prev-page(); }
-            next-page() => { root.next-page(); }
-            hide-keyboard() => { root.hide-keyboard(); }
-        }
+        VerticalLayout {
+            padding: 0px;
+            spacing: 0px;
 
-        // Bottom margin (click to hide IME)
-        Rectangle {
-            height: root.kb-bottom-margin;
-            background: transparent;
+            KeyboardPanel {
+                output-text <=> ImeState.output-text;
+                input-buffer: ImeState.input-buffer;
+                mode-indicator: ImeState.mode-indicator;
+                mode-color: ImeState.mode-color;
+                candidates: ImeState.candidates;
+                associations: ImeState.associations;
+                show-associations: ImeState.show-associations;
+                has-prev-page: ImeState.has-prev-page;
+                has-next-page: ImeState.has-next-page;
+                text-before-cursor: ImeState.text-before-cursor;
+                text-after-cursor: ImeState.text-after-cursor;
+                symbol-mode: ImeState.symbol-mode;
+                caps-lock: ImeState.caps-lock;
+                mode-tag: ImeState.mode-tag;
+                cn-method: ImeState.cn-method;
 
-            TouchArea {
-                clicked => { root.hide-keyboard(); }
+                key-pressed(id) => { root.key-pressed(id); }
+                candidate-selected(idx) => { root.candidate-selected(idx); }
+                association-selected(text) => { root.association-selected(text); }
+                prev-page() => { root.prev-page(); }
+                next-page() => { root.next-page(); }
+                hide-keyboard() => { root.hide-keyboard(); }
+            }
+
+            // Bottom margin (click to hide keyboard)
+            Rectangle {
+                height: 24px;
+                background: transparent;
+
+                TouchArea {
+                    clicked => { root.hide-keyboard(); }
+                }
             }
         }
     }

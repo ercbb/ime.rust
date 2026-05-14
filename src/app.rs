@@ -1,6 +1,6 @@
 use crate::ime::dict_core;
 use crate::ime::engine::{ImeEngine, InputMode};
-use crate::ime::layout::{self, KbLayout};
+use crate::ime::layout;
 use crate::MainWindow;
 
 use std::cell::RefCell;
@@ -21,21 +21,7 @@ fn set_box_text(win: &MainWindow, idx: i32, text: &str) {
 pub fn run(candidate_count: usize, cn_double: bool) {
     let main_window = MainWindow::new().unwrap();
 
-    // Keyboard panel size (configurable)
-    let kb_width: f32 = 600.0;
-    let kb_height: f32 = 320.0;
-    let kb_bottom_margin: f32 = 40.0;
-    let kb_opacity: f32 = 0.85;
-    let layout = Rc::new(KbLayout::new(kb_width, kb_height));
-
-    // Set layout properties on window
-    main_window.set_kb_width(kb_width);
-    main_window.set_kb_height(kb_height);
-    main_window.set_kb_bottom_margin(kb_bottom_margin);
-    main_window.set_kb_opacity(kb_opacity);
-    layout::update_keyboard_config(&main_window, &layout);
-
-    // Set initial Chinese method
+    // Set initial Chinese method (synced to ImeState via <=> in main.slint)
     let initial_cn: &str = if cn_double { "double" } else { "full" };
     main_window.set_cn_method(initial_cn.into());
 
@@ -101,7 +87,6 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             *active_box.borrow_mut() = box_idx;
 
             if let Some(win) = window_weak.upgrade() {
-                win.set_output_text(engine.output_text.as_str().into());
                 win.set_active_box(box_idx);
                 match new_mode {
                     InputMode::ChineseFull => {
@@ -136,7 +121,6 @@ pub fn run(candidate_count: usize, cn_double: bool) {
         let active_box = active_box.clone();
         move || {
             if let Some(win) = window_weak.upgrade() {
-                // 放弃：恢复 engine.output_text 为原始值
                 let mut engine = engine_rc.borrow_mut();
                 let idx = *active_box.borrow();
                 if idx >= 0 && idx < 4 {
@@ -191,7 +175,6 @@ pub fn run(candidate_count: usize, cn_double: bool) {
                 layout::update_ui(&win, &engine);
 
                 if key_str == "enter" {
-                    // 回车：确认写回并隐藏
                     let idx = *active_box.borrow();
                     if idx >= 0 && idx < 4 {
                         buffers.borrow_mut()[idx as usize] = engine.output_text.clone();
@@ -199,7 +182,6 @@ pub fn run(candidate_count: usize, cn_double: bool) {
                     }
                     win.set_show_ime(false);
                 } else if key_str == "hide_key" {
-                    // 放弃：恢复原始值，不写回，直接隐藏
                     let idx = *active_box.borrow();
                     if idx >= 0 && idx < 4 {
                         engine.output_text = buffers.borrow()[idx as usize].clone();

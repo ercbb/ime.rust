@@ -11,13 +11,36 @@ export struct CandidateItem {
     index: int,
 }
 
+// === IME Global State (shared between KeyboardPanel and host window) ===
+
+export global ImeState {
+    // --- Data ---
+    in-out property <string> output-text: "";
+    in-out property <string> input-buffer: "";
+    in-out property <string> mode-indicator: "中";
+    in-out property <color> mode-color: #0078d7;
+    in-out property <[CandidateItem]> candidates: [];
+    in-out property <[CandidateItem]> associations: [];
+    in-out property <bool> show-associations: false;
+    in-out property <bool> has-prev-page: false;
+    in-out property <bool> has-next-page: false;
+    in-out property <string> text-before-cursor: "";
+    in-out property <string> text-after-cursor: "";
+
+    // --- Mode ---
+    in-out property <bool> symbol-mode: false;
+    in-out property <bool> caps-lock: false;
+    in-out property <string> mode-tag: "full";
+    in-out property <string> cn-method: "full";
+}
+
 // === Virtual Keyboard Key Button ===
 
 export component KeyButton inherits Rectangle {
     in property <string> key-label: "";
     in property <string> key-id: "";
-    in property <length> key-w: 56px;
-    in property <length> key-h: 52px;
+    in property <length> key-w: 68px;
+    in property <length> key-h: 58px;
     in property <bool> flashing: false;
     callback clicked();
 
@@ -45,7 +68,7 @@ export component KeyButton inherits Rectangle {
 // === Candidate Bar ===
 
 export component CandidateBar inherits Rectangle {
-    height: 36px;
+    height: 54px;
 
     in property <string> mode-indicator: "中";
     in property <color> mode-color: #0078d7;
@@ -72,17 +95,17 @@ export component CandidateBar inherits Rectangle {
         alignment: start;
 
         Rectangle {
-            width: 28px; height: 22px; border-radius: 3px;
+            width: 40px; height: 44px; border-radius: 4px;
             background: root.mode-color;
-            Text { text: root.mode-indicator; font-size: 14px; color: white; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: root.mode-indicator; font-size: 20px; color: white; horizontal-alignment: center; vertical-alignment: center; }
         }
 
-        Text { text: root.input-buffer; font-size: 16px; color: root.mode-color; vertical-alignment: center; width: 100px; }
+        Text { text: root.input-buffer; font-size: 20px; color: root.mode-color; vertical-alignment: center; width: 80px; }
 
         for assoc in root.associations: Rectangle {
-            min-width: 40px; height: 26px; border-radius: 4px;
+            horizontal-stretch: 1; preferred-width: 96px; min-width: 60px; height: 44px; border-radius: 4px;
             background: #f0f0f0ee; border-width: 1px; border-color: #d0d0d0a0;
-            Text { text: assoc.text; font-size: 16px; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: assoc.text; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.association-selected(assoc.text); } }
         }
     }
@@ -98,34 +121,34 @@ export component CandidateBar inherits Rectangle {
         alignment: start;
 
         Rectangle {
-            width: 28px; height: 22px; border-radius: 3px;
+            width: 40px; height: 44px; border-radius: 4px;
             background: root.mode-color;
-            Text { text: root.mode-indicator; font-size: 14px; color: white; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: root.mode-indicator; font-size: 20px; color: white; horizontal-alignment: center; vertical-alignment: center; }
         }
 
-        Text { text: root.input-buffer; font-size: 16px; color: root.mode-color; vertical-alignment: center; width: 100px; }
+        Text { text: root.input-buffer; font-size: 20px; color: root.mode-color; vertical-alignment: center; width: 80px; }
 
         for cand[idx] in root.candidates: Rectangle {
-            min-width: 40px; height: 26px; border-radius: 4px;
+            horizontal-stretch: 1; preferred-width: 96px; min-width: 60px; height: 44px; border-radius: 4px;
             background: idx == 0 ? #0064b4 : #f0f0f0ee;
             border-width: 1px; border-color: idx == 0 ? #004680 : #d0d0d0a0;
-            Text { text: cand.text; font-size: 16px; color: idx == 0 ? white : #1e1e1e; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: cand.text; font-size: 20px; color: idx == 0 ? white : #1e1e1e; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.candidate-selected(idx); } }
         }
 
-        Rectangle { horizontal-stretch: 1; }
+        Rectangle { width: 0px; }
 
         Rectangle {
-            visible: root.has-prev-page; height: 26px; min-width: 48px;
+            visible: root.has-prev-page; height: 44px; min-width: 64px;
             border-radius: 4px; background: #e0e0e0dd;
-            Text { text: "◂"; font-size: 18px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: "◂"; font-size: 22px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.prev-page(); } }
         }
 
         Rectangle {
-            visible: root.has-next-page; height: 26px; min-width: 48px;
+            visible: root.has-next-page; height: 44px; min-width: 64px;
             border-radius: 4px; background: #e0e0e0dd;
-            Text { text: "▸"; font-size: 18px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: "▸"; font-size: 22px; color: #444; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea { clicked => { root.next-page(); } }
         }
     }
@@ -134,8 +157,8 @@ export component CandidateBar inherits Rectangle {
 // === Keyboard Rows Panel ===
 
 export component KeyboardRows inherits Rectangle {
-    in property <length> key-height: 52px;
-    in property <length> key-gap: 4px;
+    in property <length> key-height: 58px;
+    in property <length> key-gap: 8px;
     in property <[KeyValue]> row1-keys: [];
     in property <[KeyValue]> row2-keys: [];
     in property <[KeyValue]> row3-keys: [];
@@ -167,7 +190,7 @@ export component KeyboardRows inherits Rectangle {
             for k in root.row4-keys: KeyButton {
                 key-label: k.label;
                 key-id: k.id;
-                key-w: k.key-width > 0px ? k.key-width : 64px;
+                key-w: k.key-width > 0px ? k.key-width : 78px;
                 key-h: root.key-height;
                 flashing: root.active-key == k.id
                     || (k.id == "mode_lang" && root.mode-lang-active)
@@ -182,14 +205,14 @@ export component KeyboardRows inherits Rectangle {
 
 export component KeyboardPanel inherits Rectangle {
     // --- Layout ---
-    in property <length> kb-width: 600px;
-    in property <length> kb-height: 320px;
-    in property <length> key-height: 52px;
-    in property <length> key-gap: 4px;
-    in property <length> key-w: 56px;
-    in property <length> mode-w: 112px;
-    in property <length> space-w: 168px;
-    in property <length> ctrl-w: 64px;
+    in property <length> kb-width: 780px;
+    in property <length> kb-height: 360px;
+    in property <length> key-height: 58px;
+    in property <length> key-gap: 8px;
+    in property <length> key-w: 68px;
+    in property <length> mode-w: 136px;
+    in property <length> space-w: 204px;
+    in property <length> ctrl-w: 78px;
     in property <float> kb-opacity: 0.85;
 
     // --- Mode ---
