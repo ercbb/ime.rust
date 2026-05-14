@@ -40,7 +40,7 @@ export component KeyButton inherits Rectangle {
     in property <string> key-label: "";
     in property <string> key-id: "";
     in property <length> key-w: 68px;
-    in property <length> key-h: 58px;
+    in property <length> key-h: 54px;
     in property <bool> flashing: false;
     callback clicked();
 
@@ -157,7 +157,7 @@ export component CandidateBar inherits Rectangle {
 // === Keyboard Rows Panel ===
 
 export component KeyboardRows inherits Rectangle {
-    in property <length> key-height: 58px;
+    in property <length> key-height: 54px;
     in property <length> key-gap: 8px;
     in property <[KeyValue]> row1-keys: [];
     in property <[KeyValue]> row2-keys: [];
@@ -207,7 +207,7 @@ export component KeyboardPanel inherits Rectangle {
     // --- Layout ---
     in property <length> kb-width: 780px;
     in property <length> kb-height: 360px;
-    in property <length> key-height: 58px;
+    in property <length> key-height: 54px;
     in property <length> key-gap: 8px;
     in property <length> key-w: 68px;
     in property <length> mode-w: 136px;
