@@ -2,8 +2,10 @@ use crate::ime::syllable_table::{is_valid_prefix, is_valid_syllable};
 
 /// 尝试将输入缓冲区解析为拼音音节列表
 /// 返回 (已确认的音节列表, 剩余未完成的输入)
-pub fn parse_pinyin_buffer(input: &str) -> (Vec<String>, String) {
-    if input.is_empty() {
+pub fn parse_pinyin_buffer(input: &str) -> (Vec<String>, String) 
+{
+    if input.is_empty() 
+    {
         return (vec![], String::new());
     }
 
@@ -12,17 +14,21 @@ pub fn parse_pinyin_buffer(input: &str) -> (Vec<String>, String) {
     let mut pos = 0;
     let chars: Vec<char> = input.chars().collect();
 
-    while pos < chars.len() {
+    while pos < chars.len() 
+    {
         let remaining: String = chars[pos..].iter().collect();
         let mut matched: Option<(String, usize)> = None;
 
         // 从最长到最短尝试匹配
-        for end in (1..=remaining.len()).rev() {
+        for end in (1..=remaining.len()).rev() 
+        {
             let candidate: String = remaining[..end].to_string();
-            if is_valid_syllable(&candidate) {
+            if is_valid_syllable(&candidate) 
+            {
                 // 检查剩余部分是否也能构成有效前缀
                 let after = &remaining[end..];
-                if after.is_empty() || is_valid_prefix(after) {
+                if after.is_empty() || is_valid_prefix(after) 
+                {
                     matched = Some((candidate, pos + end));
                     pos += end;
                     break;
@@ -33,7 +39,8 @@ pub fn parse_pinyin_buffer(input: &str) -> (Vec<String>, String) {
             }
         }
 
-        if let Some((syl, new_pos)) = matched {
+        if let Some((syl, new_pos)) = matched 
+        {
             // 检查是否有更好的分割
             result.push(syl);
             pos = new_pos;
@@ -49,7 +56,8 @@ pub fn parse_pinyin_buffer(input: &str) -> (Vec<String>, String) {
 
     // 检查最后是否有未完成的音节
     let remaining: String = chars[pos..].iter().collect();
-    if remaining.is_empty() {
+    if remaining.is_empty() 
+    {
         (result, String::new())
     } else {
         (result, remaining)

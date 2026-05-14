@@ -3,7 +3,8 @@ import { CandidateItem, KeyboardPanel, ImeState } from "../src/ime/ui/keyboard.s
 
 // === Main Window ===
 
-export component MainWindow inherits Window {
+export component MainWindow inherits Window
+{
     title: "Wheel IME";
     preferred-width: 800px;
     preferred-height: 480px;
@@ -198,7 +199,8 @@ export component MainWindow inherits Window {
     }
 
     // === Keyboard overlay (absolutely positioned, floats above main layout) ===
-    if root.show-ime: Rectangle {
+    if root.show-ime: Rectangle
+    {
         x: 0;
         y: root.height - 384px;
         width: root.width;

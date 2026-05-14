@@ -5,7 +5,8 @@ slint::include_modules!();
 mod app;
 mod ime;
 
-fn main() {
+fn main() 
+{
     let candidate_count = std::env::args()
         .nth(1)
         .and_then(|s| s.parse::<usize>().ok())

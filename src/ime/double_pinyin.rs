@@ -7,13 +7,29 @@
 
 /// 声母按键对照表
 const INITIAL_TABLE: &[(char, &str)] = &[
-    ('b', "b"), ('p', "p"), ('m', "m"), ('f', "f"),
-    ('d', "d"), ('t', "t"), ('n', "n"), ('l', "l"),
-    ('g', "g"), ('k', "k"), ('h', "h"),
-    ('j', "j"), ('q', "q"), ('x', "x"),
-    ('z', "z"), ('c', "c"), ('s', "s"), ('r', "r"),
-    ('v', "zh"), ('i', "ch"), ('u', "sh"),
-    ('y', "y"), ('w', "w"),
+    ('b', "b"),
+    ('p', "p"),
+    ('m', "m"),
+    ('f', "f"),
+    ('d', "d"),
+    ('t', "t"),
+    ('n', "n"),
+    ('l', "l"),
+    ('g', "g"),
+    ('k', "k"),
+    ('h', "h"),
+    ('j', "j"),
+    ('q', "q"),
+    ('x', "x"),
+    ('z', "z"),
+    ('c', "c"),
+    ('s', "s"),
+    ('r', "r"),
+    ('v', "zh"),
+    ('i', "ch"),
+    ('u', "sh"),
+    ('y', "y"),
+    ('w', "w"),
 ];
 
 /// 韵母按键对照表（自然码方案）
@@ -24,47 +40,72 @@ const INITIAL_TABLE: &[(char, &str)] = &[
 ///   s → ong  (j/q/x 后取 iong)
 ///   o → uo   (b/p/m/f 后取 o)
 const FINAL_TABLE: &[(char, &str)] = &[
-    ('a', "a"),   ('b', "ou"),  ('c', "iao"), ('d', "uang"), ('e', "e"),
-    ('f', "en"),  ('g', "eng"), ('h', "ang"), ('i', "i"),    ('j', "an"),
-    ('k', "ao"),  ('l', "ai"),  ('m', "ian"), ('n', "in"),   ('o', "uo"),
-    ('p', "un"),  ('q', "iu"),  ('r', "uan"), ('s', "ong"),  ('t', "ue"),
-    ('u', "u"),   ('v', "ui"),  ('w', "ia"),  ('x', "ie"),   ('y', "ing"),
+    ('a', "a"),
+    ('b', "ou"),
+    ('c', "iao"),
+    ('d', "uang"),
+    ('e', "e"),
+    ('f', "en"),
+    ('g', "eng"),
+    ('h', "ang"),
+    ('i', "i"),
+    ('j', "an"),
+    ('k', "ao"),
+    ('l', "ai"),
+    ('m', "ian"),
+    ('n', "in"),
+    ('o', "uo"),
+    ('p', "un"),
+    ('q', "iu"),
+    ('r', "uan"),
+    ('s', "ong"),
+    ('t', "ue"),
+    ('u', "u"),
+    ('v', "ui"),
+    ('w', "ia"),
+    ('x', "ie"),
+    ('y', "ing"),
     ('z', "ei"),
 ];
 
 /// 获取声母
-pub fn get_initial(key: char) -> Option<&'static str> {
-    INITIAL_TABLE.iter()
+pub fn get_initial(key: char) -> Option<&'static str> 
+{
+    INITIAL_TABLE
+        .iter()
         .find(|(k, _)| *k == key)
         .map(|(_, v)| *v)
 }
 
 /// 获取韵母
-pub fn get_final(key: char) -> Option<&'static str> {
-    FINAL_TABLE.iter()
-        .find(|(k, _)| *k == key)
-        .map(|(_, v)| *v)
+pub fn get_final(key: char) -> Option<&'static str> 
+{
+    FINAL_TABLE.iter().find(|(k, _)| *k == key).map(|(_, v)| *v)
 }
 
 /// 将自然码双拼编码转换为拼音音节
 /// input: 双拼编码序列（每两个字母代表一个音节）
 /// 返回: 拼音音节列表
-pub fn parse_double_pinyin(input: &str) -> (Vec<String>, String) {
+pub fn parse_double_pinyin(input: &str) -> (Vec<String>, String) 
+{
     let input = input.to_lowercase();
     let chars: Vec<char> = input.chars().collect();
     let mut result = Vec::new();
 
     let mut pos = 0;
-    while pos + 1 < chars.len() {
+    while pos + 1 < chars.len() 
+    {
         let initial_key = chars[pos];
         let final_key = chars[pos + 1];
 
         // 零声母情况：首键为 'o' 或声母键即韵母
         let initial = get_initial(initial_key);
 
-        if let Some(init) = initial {
+        if let Some(init) = initial 
+        {
             let final_str = get_final(final_key);
-            if let Some(fin) = final_str {
+            if let Some(fin) = final_str 
+            {
                 let pinyin = combine_initial_final(init, fin);
                 result.push(pinyin);
             } else {
@@ -88,13 +129,16 @@ pub fn parse_double_pinyin(input: &str) -> (Vec<String>, String) {
 
 /// 将自然码双拼输入转换为拼音音节（用于实时输入）
 /// 支持未完成的双拼编码
-pub fn double_pinyin_to_syllables(input: &str) -> (Vec<String>, String) {
+pub fn double_pinyin_to_syllables(input: &str) -> (Vec<String>, String) 
+{
     parse_double_pinyin(input)
 }
 
 /// 合并声母和韵母，处理自然码双韵母消歧及拼音拼写规则
-fn combine_initial_final(initial: &str, final_: &str) -> String {
-    match (initial, final_) {
+fn combine_initial_final(initial: &str, final_: &str) -> String 
+{
+    match (initial, final_) 
+    {
         // === d 键消歧: uang / iang ===
         // j/q/x + uang → iang
         ("j", "uang") => "jiang".to_string(),
@@ -162,11 +206,13 @@ fn combine_initial_final(initial: &str, final_: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests 
+{
     use super::*;
 
     #[test]
-    fn test_double_pinyin_nihao() {
+    fn test_double_pinyin_nihao() 
+    {
         // n + i → ni, h + k → hao
         let (syllables, remaining) = double_pinyin_to_syllables("nihk");
         assert_eq!(syllables, vec!["ni", "hao"]);
@@ -174,7 +220,8 @@ mod tests {
     }
 
     #[test]
-    fn test_double_pinyin_zhongguo() {
+    fn test_double_pinyin_zhongguo() 
+    {
         // v + s → zh + ong = zhong, g + o → g + uo = guo
         let (syllables, remaining) = double_pinyin_to_syllables("vsgo");
         assert_eq!(syllables, vec!["zhong", "guo"]);
@@ -182,21 +229,24 @@ mod tests {
     }
 
     #[test]
-    fn test_double_pinyin_partial() {
+    fn test_double_pinyin_partial() 
+    {
         let (syllables, remaining) = double_pinyin_to_syllables("n");
         assert!(syllables.is_empty());
         assert_eq!(remaining, "n");
     }
 
     #[test]
-    fn test_double_pinyin_shuru() {
+    fn test_double_pinyin_shuru() 
+    {
         // u + u → sh + u = shu, r + u → r + u = ru
         let (syllables, _) = double_pinyin_to_syllables("uuru");
         assert_eq!(syllables, vec!["shu", "ru"]);
     }
 
     #[test]
-    fn test_single_code() {
+    fn test_single_code() 
+    {
         let (s, _) = double_pinyin_to_syllables("ni");
         assert_eq!(s, vec!["ni"]);
         let (s, _) = double_pinyin_to_syllables("hk");
@@ -206,7 +256,8 @@ mod tests {
     // === 修正后的自然码映射测试 ===
 
     #[test]
-    fn test_final_z_ei() {
+    fn test_final_z_ei() 
+    {
         // z → ei: fz = f + ei = fei
         let (s, _) = double_pinyin_to_syllables("fz");
         assert_eq!(s, vec!["fei"]);
@@ -215,7 +266,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_t_ue() {
+    fn test_final_t_ue() 
+    {
         // t → ue: jt = jue (j/q/x 后 üe)
         let (s, _) = double_pinyin_to_syllables("jt");
         assert_eq!(s, vec!["jue"]);
@@ -231,7 +283,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_d_uang_iang() {
+    fn test_final_d_uang_iang() 
+    {
         // d → uang: gd = guang
         let (s, _) = double_pinyin_to_syllables("gd");
         assert_eq!(s, vec!["guang"]);
@@ -249,7 +302,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_w_ia_ua() {
+    fn test_final_w_ia_ua() 
+    {
         // w → ia: jw = jia
         let (s, _) = double_pinyin_to_syllables("jw");
         assert_eq!(s, vec!["jia"]);
@@ -277,7 +331,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_y_ing_uai() {
+    fn test_final_y_ing_uai() 
+    {
         // y → ing: jy = jing
         let (s, _) = double_pinyin_to_syllables("jy");
         assert_eq!(s, vec!["jing"]);
@@ -303,7 +358,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_s_ong_iong() {
+    fn test_final_s_ong_iong() 
+    {
         // s → ong: gs = gong
         let (s, _) = double_pinyin_to_syllables("gs");
         assert_eq!(s, vec!["gong"]);
@@ -319,7 +375,8 @@ mod tests {
     }
 
     #[test]
-    fn test_final_o_uo_o() {
+    fn test_final_o_uo_o() 
+    {
         // o → uo: go = guo
         let (s, _) = double_pinyin_to_syllables("go");
         assert_eq!(s, vec!["guo"]);

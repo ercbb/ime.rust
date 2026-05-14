@@ -2,19 +2,12 @@ use crate::ime::engine::{ImeEngine, InputMode};
 use crate::{CandidateItem, MainWindow};
 
 /// 推送引擎状态到 MainWindow Slint 属性
-pub fn update_ui(window: &MainWindow, engine: &ImeEngine) {
+pub fn update_ui(window: &MainWindow, engine: &ImeEngine) 
+{
     window.set_output_text(engine.output_text.as_str().into());
 
-    let before: String = engine
-        .output_text
-        .chars()
-        .take(engine.cursor_pos)
-        .collect();
-    let after: String = engine
-        .output_text
-        .chars()
-        .skip(engine.cursor_pos)
-        .collect();
+    let before: String = engine.output_text.chars().take(engine.cursor_pos).collect();
+    let after: String = engine.output_text.chars().skip(engine.cursor_pos).collect();
     window.set_text_before_cursor(before.as_str().into());
     window.set_text_after_cursor(after.as_str().into());
 
@@ -32,7 +25,8 @@ pub fn update_ui(window: &MainWindow, engine: &ImeEngine) {
     window.set_caps_lock(engine.caps_lock);
     window.set_mode_tag(tag.into());
 
-    if !engine.candidates.is_empty() {
+    if !engine.candidates.is_empty() 
+    {
         let total = engine.candidates.len();
         let page = engine.candidate_page + 1;
         let total_pages = (total + engine.page_size - 1) / engine.page_size;

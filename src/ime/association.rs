@@ -1,37 +1,78 @@
 use std::collections::HashMap;
 
 /// 联想引擎：根据已输入的最后一个字/词推荐可能的下一个字/词
-pub struct AssociationEngine {
+pub struct AssociationEngine 
+{
     /// 字→联想词列表
     assoc_map: HashMap<String, Vec<String>>,
 }
 
-impl AssociationEngine {
-    pub fn new() -> Self {
+impl AssociationEngine 
+{
+    pub fn new() -> Self 
+    {
         let mut assoc_map: HashMap<String, Vec<String>> = HashMap::new();
 
         // 内置常用联想数据
         let associations: &[(&str, &[&str])] = &[
             ("你", &["好", "们", "的", "是", "有", "要", "可以", "知道"]),
             ("好", &["的", "了", "吗", "人", "看", "很", "不好", "像"]),
-            ("我", &["的", "是", "在", "有", "要", "能", "们", "想", "会", "去"]),
+            (
+                "我",
+                &["的", "是", "在", "有", "要", "能", "们", "想", "会", "去"],
+            ),
             ("他", &["的", "是", "在", "有", "们", "说", "去", "要"]),
             ("她", &["的", "是", "在", "说", "有", "很"]),
             ("它", &["的", "是", "们", "在"]),
             ("们", &["的", "是", "有", "在", "都"]),
-            ("的", &["人", "时候", "地方", "话", "事", "东西", "孩子", "家", "书", "问题"]),
-            ("是", &["的", "不", "一", "在", "我", "你", "他", "什么", "因为"]),
-            ("在", &["这", "那", "家", "学校", "公司", "哪", "这里", "那里", "做什么"]),
-            ("有", &["一", "没", "的", "很多", "什么", "几个", "些", "可能"]),
-            ("不", &["是", "知道", "要", "能", "会", "好", "错", "用", "到", "想"]),
+            (
+                "的",
+                &[
+                    "人", "时候", "地方", "话", "事", "东西", "孩子", "家", "书", "问题",
+                ],
+            ),
+            (
+                "是",
+                &["的", "不", "一", "在", "我", "你", "他", "什么", "因为"],
+            ),
+            (
+                "在",
+                &[
+                    "这",
+                    "那",
+                    "家",
+                    "学校",
+                    "公司",
+                    "哪",
+                    "这里",
+                    "那里",
+                    "做什么",
+                ],
+            ),
+            (
+                "有",
+                &["一", "没", "的", "很多", "什么", "几个", "些", "可能"],
+            ),
+            (
+                "不",
+                &["是", "知道", "要", "能", "会", "好", "错", "用", "到", "想"],
+            ),
             ("了", &["吗", "吧", "啊", "一下", "以后", "以后", "时候"]),
             ("和", &["我", "你", "他", "她", "朋友", "大家", "家人"]),
-            ("就", &["是", "在", "要", "有", "说", "去", "能", "会", "可以"]),
+            (
+                "就",
+                &["是", "在", "要", "有", "说", "去", "能", "会", "可以"],
+            ),
             ("也", &["是", "有", "要", "能", "会", "在", "不", "都"]),
             ("都", &["是", "有", "在", "不", "要", "能", "会"]),
             ("会", &["的", "不", "去", "来", "做", "说", "用", "好"]),
             ("能", &["不", "够", "力", "做", "用", "来", "去"]),
-            ("要", &["是", "不", "的", "去", "做", "来", "用", "知道", "想", "可以"]),
+            (
+                "要",
+                &[
+                    "是", "不", "的", "去", "做", "来", "用", "知道", "想", "可以",
+                ],
+            ),
             ("去", &["了", "的", "哪", "看", "做", "玩", "学校", "公司"]),
             ("来", &["了", "的", "看", "到", "说", "问", "做"]),
             ("说", &["了", "的", "是", "过", "到", "不"]),
@@ -139,7 +180,8 @@ impl AssociationEngine {
             ("太", &["好了", "阳", "多"]),
         ];
 
-        for (char, assoc_list) in associations {
+        for (char, assoc_list) in associations 
+        {
             assoc_map.insert(
                 char.to_string(),
                 assoc_list.iter().map(|s| s.to_string()).collect(),
@@ -150,8 +192,10 @@ impl AssociationEngine {
     }
 
     /// 根据输入的文本获取联想建议
-    pub fn get_suggestions(&self, text: &str) -> Vec<String> {
-        if text.is_empty() {
+    pub fn get_suggestions(&self, text: &str) -> Vec<String> 
+    {
+        if text.is_empty() 
+        {
             return vec![];
         }
 
@@ -159,31 +203,35 @@ impl AssociationEngine {
         let last_char = text.chars().last().unwrap().to_string();
 
         // 检查是否是汉字
-        if !is_chinese_char(&last_char) {
+        if !is_chinese_char(&last_char) 
+        {
             return vec![];
         }
 
         // 先尝试最后一个字
-        if let Some(suggestions) = self.assoc_map.get(&last_char) {
+        if let Some(suggestions) = self.assoc_map.get(&last_char) 
+        {
             return suggestions.clone();
         }
 
         // 尝试最后两个字
         let chars: Vec<char> = text.chars().collect();
-        if chars.len() >= 2 {
+        if chars.len() >= 2 
+        {
             let last_two: String = chars[chars.len() - 2..].iter().collect();
-            if let Some(suggestions) = self.assoc_map.get(&last_two) {
+            if let Some(suggestions) = self.assoc_map.get(&last_two) 
+            {
                 return suggestions.clone();
             }
         }
 
         vec![]
     }
-
 }
 
 /// 判断是否是中文字符
-fn is_chinese_char(c: &str) -> bool {
+fn is_chinese_char(c: &str) -> bool 
+{
     c.chars().next().map_or(false, |ch| {
         ('\u{4e00}'..='\u{9fff}').contains(&ch)
             || ('\u{3400}'..='\u{4dbf}').contains(&ch)
@@ -191,8 +239,10 @@ fn is_chinese_char(c: &str) -> bool {
     })
 }
 
-impl Default for AssociationEngine {
-    fn default() -> Self {
+impl Default for AssociationEngine 
+{
+    fn default() -> Self 
+    {
         Self::new()
     }
 }

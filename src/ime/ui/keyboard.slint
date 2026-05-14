@@ -1,19 +1,22 @@
 // === IME Keyboard Shared Structs ===
 
-export struct KeyValue {
+export struct KeyValue
+{
     label: string,
     id: string,
     key-width: length,
 }
 
-export struct CandidateItem {
+export struct CandidateItem
+{
     text: string,
     index: int,
 }
 
 // === IME Global State (shared between KeyboardPanel and host window) ===
 
-export global ImeState {
+export global ImeState
+{
     // --- Data ---
     in-out property <string> output-text: "";
     in-out property <string> input-buffer: "";
@@ -36,7 +39,8 @@ export global ImeState {
 
 // === Virtual Keyboard Key Button ===
 
-export component KeyButton inherits Rectangle {
+export component KeyButton inherits Rectangle
+{
     in property <string> key-label: "";
     in property <string> key-id: "";
     in property <length> key-w: 68px;
@@ -67,7 +71,8 @@ export component KeyButton inherits Rectangle {
 
 // === Candidate Bar ===
 
-export component CandidateBar inherits Rectangle {
+export component CandidateBar inherits Rectangle
+{
     height: 54px;
 
     in property <string> mode-indicator: "中";
@@ -102,7 +107,8 @@ export component CandidateBar inherits Rectangle {
 
         Text { text: root.input-buffer; font-size: 20px; color: root.mode-color; vertical-alignment: center; width: 80px; }
 
-        for assoc in root.associations: Rectangle {
+        for assoc in root.associations: Rectangle
+        {
             horizontal-stretch: 1; preferred-width: 96px; min-width: 60px; height: 44px; border-radius: 4px;
             background: #f0f0f0ee; border-width: 1px; border-color: #d0d0d0a0;
             Text { text: assoc.text; font-size: 20px; horizontal-alignment: center; vertical-alignment: center; }
@@ -128,7 +134,8 @@ export component CandidateBar inherits Rectangle {
 
         Text { text: root.input-buffer; font-size: 20px; color: root.mode-color; vertical-alignment: center; width: 80px; }
 
-        for cand[idx] in root.candidates: Rectangle {
+        for cand[idx] in root.candidates: Rectangle
+        {
             horizontal-stretch: 1; preferred-width: 96px; min-width: 60px; height: 44px; border-radius: 4px;
             background: idx == 0 ? #0064b4 : #f0f0f0ee;
             border-width: 1px; border-color: idx == 0 ? #004680 : #d0d0d0a0;
@@ -156,7 +163,8 @@ export component CandidateBar inherits Rectangle {
 
 // === Keyboard Rows Panel ===
 
-export component KeyboardRows inherits Rectangle {
+export component KeyboardRows inherits Rectangle
+{
     in property <length> key-height: 54px;
     in property <length> key-gap: 8px;
     in property <[KeyValue]> row1-keys: [];
@@ -203,7 +211,8 @@ export component KeyboardRows inherits Rectangle {
 
 // === Complete Keyboard Panel (self-contained control) ===
 
-export component KeyboardPanel inherits Rectangle {
+export component KeyboardPanel inherits Rectangle
+{
     // --- Layout ---
     in property <length> kb-width: 780px;
     in property <length> kb-height: 360px;

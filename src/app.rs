@@ -8,8 +8,10 @@ use std::rc::Rc;
 
 use slint::{ComponentHandle, SharedString};
 
-fn set_box_text(win: &MainWindow, idx: i32, text: &str) {
-    match idx {
+fn set_box_text(win: &MainWindow, idx: i32, text: &str) 
+{
+    match idx 
+    {
         0 => win.set_text_english(text.into()),
         1 => win.set_text_symbols(text.into()),
         2 => win.set_text_full(text.into()),
@@ -18,7 +20,8 @@ fn set_box_text(win: &MainWindow, idx: i32, text: &str) {
     }
 }
 
-pub fn run(candidate_count: usize, cn_double: bool) {
+pub fn run(candidate_count: usize, cn_double: bool) 
+{
     let main_window = MainWindow::new().unwrap();
 
     // Set initial Chinese method (synced to ImeState via <=> in main.slint)
@@ -30,7 +33,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
 
     // Initialize IME engine with configured Chinese mode
     let mut engine = ImeEngine::new();
-    if cn_double {
+    if cn_double 
+    {
         engine.toggle_mode(InputMode::ChineseDouble);
     }
     engine.page_size = candidate_count.max(1);
@@ -73,9 +77,11 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             let mut engine = engine_rc.borrow_mut();
 
             // Save current output to previous box's buffer
-            if old_idx >= 0 && old_idx < 4 {
+            if old_idx >= 0 && old_idx < 4 
+            {
                 buffers.borrow_mut()[old_idx as usize] = engine.output_text.clone();
-                if let Some(win) = window_weak.upgrade() {
+                if let Some(win) = window_weak.upgrade() 
+                {
                     set_box_text(&win, old_idx, &engine.output_text);
                 }
             }
@@ -86,9 +92,11 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             engine.cursor_pos = engine.output_text.chars().count();
             *active_box.borrow_mut() = box_idx;
 
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 win.set_active_box(box_idx);
-                match new_mode {
+                match new_mode 
+                {
                     InputMode::ChineseFull => {
                         win.set_cn_method("full".into());
                         *cn_pref.borrow_mut() = "full".to_string();
@@ -108,7 +116,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
     main_window.on_show_keyboard({
         let window_weak = window_weak.clone();
         move || {
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 win.set_show_ime(true);
             }
         }
@@ -120,10 +129,12 @@ pub fn run(candidate_count: usize, cn_double: bool) {
         let buffers = buffers.clone();
         let active_box = active_box.clone();
         move || {
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 let mut engine = engine_rc.borrow_mut();
                 let idx = *active_box.borrow();
-                if idx >= 0 && idx < 4 {
+                if idx >= 0 && idx < 4 
+                {
                     engine.output_text = buffers.borrow()[idx as usize].clone();
                 }
                 engine.cursor_pos = engine.output_text.chars().count();
@@ -143,7 +154,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             let mut engine = engine_rc.borrow_mut();
             let key_str = key_id.as_str();
 
-            if key_str == "mode_en" {
+            if key_str == "mode_en" 
+            {
                 engine.toggle_mode(crate::ime::engine::InputMode::English);
             } else if key_str == "mode_num" {
                 engine.toggle_mode(crate::ime::engine::InputMode::Symbols);
@@ -157,12 +169,14 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             } else if key_str == "caps_lock" {
                 engine.toggle_caps_lock();
             } else if key_str == "cursor_left" {
-                if engine.cursor_pos > 0 {
+                if engine.cursor_pos > 0 
+                {
                     engine.cursor_pos -= 1;
                 }
             } else if key_str == "cursor_right" {
                 let len = engine.output_text.chars().count();
-                if engine.cursor_pos < len {
+                if engine.cursor_pos < len 
+                {
                     engine.cursor_pos += 1;
                 }
             } else if key_str == "hide_key" {
@@ -171,19 +185,23 @@ pub fn run(candidate_count: usize, cn_double: bool) {
                 engine.process_key(key_str);
             }
 
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 layout::update_ui(&win, &engine);
 
-                if key_str == "enter" {
+                if key_str == "enter" 
+                {
                     let idx = *active_box.borrow();
-                    if idx >= 0 && idx < 4 {
+                    if idx >= 0 && idx < 4 
+                    {
                         buffers.borrow_mut()[idx as usize] = engine.output_text.clone();
                         set_box_text(&win, idx, &engine.output_text);
                     }
                     win.set_show_ime(false);
                 } else if key_str == "hide_key" {
                     let idx = *active_box.borrow();
-                    if idx >= 0 && idx < 4 {
+                    if idx >= 0 && idx < 4 
+                    {
                         engine.output_text = buffers.borrow()[idx as usize].clone();
                     }
                     engine.cursor_pos = engine.output_text.chars().count();
@@ -201,7 +219,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
             let mut engine = engine_rc.borrow_mut();
             let key = (idx + 1).to_string();
             engine.process_key(&key);
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 layout::update_ui(&win, &engine);
             }
         }
@@ -214,7 +233,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
         move |text: SharedString| {
             let mut engine = engine_rc.borrow_mut();
             engine.select_association(text.as_str());
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 layout::update_ui(&win, &engine);
             }
         }
@@ -227,7 +247,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
         move || {
             let mut engine = engine_rc.borrow_mut();
             engine.prev_page();
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 layout::update_ui(&win, &engine);
             }
         }
@@ -239,7 +260,8 @@ pub fn run(candidate_count: usize, cn_double: bool) {
         move || {
             let mut engine = engine_rc.borrow_mut();
             engine.next_page();
-            if let Some(win) = window_weak.upgrade() {
+            if let Some(win) = window_weak.upgrade() 
+            {
                 layout::update_ui(&win, &engine);
             }
         }
