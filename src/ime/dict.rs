@@ -27,6 +27,46 @@ impl Dictionary
         Self { chars, phrases }
     }
 
+    /// 创建字典并合并扩展词组（扩展词组频次较低，不会覆盖原始高频词组）
+    pub fn new_with_expanded(chars_data: &str, phrases_data: &str, expanded_data: &str) -> Self 
+    {
+        let chars = parse_dict_data(chars_data);
+        let mut phrases = parse_dict_data(phrases_data);
+        let expanded = parse_dict_data(expanded_data);
+
+        // 合并扩展词组：相同拼音键的条目追加；同文本取更高频次
+        for (key, new_entries) in expanded 
+        {
+            let existing = phrases.entry(key).or_default();
+            for new_entry in new_entries 
+            {
+                if let Some(old) = existing.iter_mut().find(|e| e.text == new_entry.text) 
+                {
+                    if new_entry.freq > old.freq 
+                    {
+                        old.freq = new_entry.freq;
+                    }
+                }
+                else 
+                {
+                    existing.push(new_entry);
+                }
+            }
+        }
+
+        // 每个拼音的候选按频率重新排序
+        for entries in phrases.values_mut() 
+        {
+            entries.sort_by(|a, b| {
+                b.freq
+                    .partial_cmp(&a.freq)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+        }
+
+        Self { chars, phrases }
+    }
+
     /// 查询单字
     pub fn lookup_chars(&self, pinyin: &str) -> Vec<DictEntry> 
     {
