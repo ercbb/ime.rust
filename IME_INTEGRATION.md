@@ -340,6 +340,65 @@ main_window.on_hide_keyboard(move || { win.set_show_ime(false); });
 
 8. **候选字数**：`engine.page_size` 控制每页候选字数，默认可通过命令行参数传入（`cargo run -- 5`）。
 
-## 7. 完整示例
+## 7. 双拼（自然码）快速参考
+
+### 7.1 声母映射
+
+| 按键 | 声母 | 按键 | 声母 |
+|------|------|------|------|
+| v | zh | i | ch |
+| u | sh | 其他 | 同键位 |
+
+### 7.2 韵母映射
+
+| 按键 | 韵母 | 按键 | 韵母 | 按键 | 韵母 |
+|------|------|------|------|------|------|
+| a | a | j | an | s | ong |
+| b | ou | k | ao | t | ue |
+| c | iao | l | ai | u | u |
+| d | uang/iang | m | ian | v | ui |
+| e | e | n | in | w | ia/ua |
+| f | en | o | uo/o | x | ie |
+| g | eng | p | un | y | ing/uai |
+| h | ang | q | iu | z | ei |
+| i | i | r | uan | | |
+
+### 7.3 消歧规则
+
+| 按键 | 默认韵母 | 条件 | 实际韵母 |
+|------|----------|------|----------|
+| d | uang | j/q/x 后 | iang |
+| w | ia | g/k/h/zh/ch/sh 后 | ua |
+| y | ing | g/k/h/zh/ch/sh 后 | uai |
+| s | ong | j/q/x 后 | iong |
+| o | uo | b/p/m/f 后 | o |
+
+### 7.4 零声母
+
+对于 a/e/o 开头的零声母字，首键用 a/e/o 作为韵母标记，第二键为韵母键：
+
+| 汉字 | 拼音 | 编码 | 规则 |
+|------|------|------|------|
+| 阿 | a | aa | a + a |
+| 爱 | ai | al | a + l(ai) |
+| 安 | an | aj | a + j(an) |
+| 奥 | ao | ak | a + k(ao) |
+| 昂 | ang | ah | a + h(ang) |
+| 恩 | en | ef | e + f(en) |
+| 诶 | ei | ez | e + z(ei) |
+| 欧 | ou | ob | o + b(ou) |
+
+### 7.5 示例
+
+| 汉字 | 双拼 | 说明 |
+|------|------|------|
+| 你 | ni | n + i |
+| 好 | hk | h + k(ao) |
+| 中国 | vsgo | v(zh)+s(ong), g+o(uo) |
+| 江 | jd | j + d(iang) |
+| 安 | aj | a + j(an) |
+| 恩爱 | efal | e+f(en), a+l(ai) |
+
+## 8. 完整示例
 
 参见本仓库 `ui/main.slint`（Slint 端）和 `src/app.rs`（Rust 端）。
