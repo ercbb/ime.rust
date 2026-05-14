@@ -12,6 +12,7 @@ export component MainWindow inherits Window {
     // --- Host-only ---
     in-out property <image> bg-image: @image-url("assets/bg.png");
     in-out property <bool> show-ime: false;
+    in-out property <float> kb-opacity: 0.85;
 
     // --- IME state (owned by host, synced to global for keyboard access) ---
     in-out property <string> output-text <=> ImeState.output-text;
@@ -212,6 +213,7 @@ export component MainWindow inherits Window {
             spacing: 0px;
 
             KeyboardPanel {
+                kb-opacity: root.kb-opacity;
                 output-text <=> ImeState.output-text;
                 input-buffer: ImeState.input-buffer;
                 mode-indicator: ImeState.mode-indicator;
